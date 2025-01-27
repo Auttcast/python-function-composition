@@ -2,25 +2,24 @@ from typing import Callable
 from collections.abc import Iterable
 
 #RULES:
-#calling func(*args) requires args to be a collection
-#all args received from __call__ will be wrapped in (,)
-#note, the call chain will be a mixture of composers and user-lambdas, with a mixture of requirements
-#results from user f or g should be wrapped in (,) as a form of normalization
+#Composer has two objectives
+#1: wrap lambdas in composable functionality: f
+#2: optionally contain another composed function: g
+
+#g will only exist if Composable was created from a chain
 
 class Composable:
 
-  def __init__(self, func, nextFunc=None, parentComp=None):
-    self.parentComp = parentComp
+  def __init__(self, func):
     self.f = func
-    self.g = nextFunc
+    self.g = None
+    self.chained = False
 #    self.f: Callable[[()], ()] = func
 #    self.g: Callable[[()], ()] = nextFunc
     
   def log(self, message):
     if True:
-      print(f"DEBUG {message}")
-    
-  def isMain(self): return self.parentComp == None
+      print(f"DEBUG {self.__hash__()} {message}")
     
   def _invoke(self, func, name, args):
     funcType = "compose" if type(func) == type(self) else "func"
@@ -30,7 +29,7 @@ class Composable:
     
     if not type(func) == type(self):
       r = (r,)
-      self.log(f"AFTER  {funcType} {name}({args}) -> {r}  ||| hash{func.__hash__()} ")
+      #self.log(f"AFTER  {funcType} {name}({args}) -> {r}  ||| hash{func.__hash__()} ")
     
     return r
   
@@ -41,23 +40,36 @@ class Composable:
     
   def __call__(self, *args):
     try:
-      self.log(f"________ isMain: {self.isMain()} g: {self.parentComp}")
-      
+      #self.log(f"__call__ in: {args} type(self.f): {type(self.f)} type(self.g): {type(self.g)} -----------------")
       r = self._internal_call(args)
+      #r = r[0]
+      #self.log(f"__call__ out: {r}")
+#      if self.g is not None:
+#        self.log(f"CHAINS (self, f, g) ({self.chained}, {self.f.chained}, {self.g.chained})")
+        
+#      if type(self.f) is type(Composable):
       
-      if self.isMain():
-        self.log(f"UNPACKING {r}")
-        #return r #unpack args on last call
-      r = r
-      self.log(f"__call__ RETURN: {r} {type(r)} has g: {not self.g is None}")
+      shouldUnpackResult = self.g is not None and not self.chained and not self.g.chained
+      if shouldUnpackResult: r = r[0]
+      
       return r
     except Exception as inst:
       self.log(f"EXCEPTION -------- {type(inst)} {inst}")
       raise inst
       
+#rules:
+#always return a new composition
+#where the current composer is f, and other is g
+#f may always be
   def __or__(self, other):
+#    self.log(f"COMPOSE::::::::: {self.name} | {other.name}")
+#    self.log(f"COMPOSE::::::::: {self} | {other.name}")
     if isinstance(other, Composable):
-        return Composable(self, other.f, parentComp=self)
+        newComp = Composable(self)
+        otherComp = Composable(other.f)
+        newComp.g = otherComp
+        newComp.f.chained = True
+        return newComp
     else:
         raise TypeError(f"Unsupported operand type(s) for |: 'Composable' and '{type(other).__name__}'")
 

@@ -17,6 +17,12 @@ def test_debug():
   inc4 = f(lambda x: x+4)
   inc5 = f(lambda x: x+5)
   
+  inc1.name = "inc1"
+  inc2.name = "inc2"
+  inc3.name = "inc3"
+  inc4.name = "inc4"
+  inc5.name = "inc5"
+  
   func = inc1 | inc2 | inc3 | inc4 | inc5
   assert func(1) == 16
 
