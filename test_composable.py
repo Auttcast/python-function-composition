@@ -1,6 +1,8 @@
-import math, composable
+import composable
 
 f = composable.Composable
+
+f.enableLogging = True
 
 inc = f(lambda x: x+1)
 incPass = f(lambda x,y: (x+1, y+1))
@@ -60,11 +62,19 @@ def test_iterables():
 def voidFunc(x):
   print(f"I don't return anything! {x}")
   
+def test_void2():
+  vf = f(voidFunc)
+  func = vf | vf | vf
+  func(123) #only applies 123 to first call...
+  assert True, "does not throw"
+  
 def voidFunc2():
   print(f"not input, not output")
   
-def test_void():
+def test_void2():
   vf = f(voidFunc2)
   func = vf | vf | vf
   func()
   assert True, "does not throw"
+  
+

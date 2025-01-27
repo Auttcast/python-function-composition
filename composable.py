@@ -1,17 +1,12 @@
 from typing import Callable, Optional
-from collections.abc import Iterable
 
 #todo
 #wrap modules/classes, decorators
-
-#RULES:
-#Composer has two objectives
-#1: wrap lambdas in composable functionality: f
-#2: optionally contain another composed function: g
-
-#g will only exist if Composable was created from a chain
+#type hinting?
 
 class Composable:
+
+  enableLogging = False
 
   def __init__(self, func: Callable):
     self.f = func
@@ -19,7 +14,7 @@ class Composable:
     self.chained = False
     
   def log(self, message):
-    if True:
+    if self.enableLogging:
       print(f"DEBUG {self.__hash__()} {message}")
     
   def __isComposable(self, target): return type(target) == type(self)
@@ -29,9 +24,6 @@ class Composable:
     if not self.__isComposable(target): return None
     return target.chained
     
-#rules:
-#single-param functions require args to pass as shape (1,)
-#multi-param functions require unpacking
   def __invokeNative(self, func, name, args):
     self.log(f"START FUNCTION -----------------{name} {args}")
     
@@ -47,7 +39,7 @@ class Composable:
     self.log(f"END COMPOSE -----------------{name} {args} -> {r}")
     return r
   
-  def _internal_call(self, args):
+  def __internal_call(self, args):
   
     invokeF = self.__invokeCompose if self.__isComposable(self.f) else self.__invokeNative
     result = invokeF(self.f, "f", args)
@@ -66,7 +58,7 @@ class Composable:
   def __call__(self, *args):
     try:
     
-      r = self._internal_call(args)
+      r = self.__internal_call(args)
  
       (terminatingUnchained, terminatingChain) = self.__getChainState()
       
