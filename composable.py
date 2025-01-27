@@ -1,6 +1,9 @@
 from typing import Callable, Optional
 from collections.abc import Iterable
 
+#todo
+#wrap modules/classes, decorators
+
 #RULES:
 #Composer has two objectives
 #1: wrap lambdas in composable functionality: f
@@ -14,7 +17,6 @@ class Composable:
     self.f = func
     self.g = None
     self.chained = False
-    self.name = "f"
     
   def log(self, message):
     if True:
@@ -34,14 +36,14 @@ class Composable:
     self.log(f"START FUNCTION -----------------{name} {args}")
     
     r = func(*args)
-    if type(r) is not type((1,)): r = (r,)
+    if type(r) not in [type((1,)), type(None)]: r = (r,)
     
     self.log(f"START FUNCTION -----------------{name} {args} -> {r}")
     return r
   
   def __invokeCompose(self, func, name, args):
     self.log(f"START COMPOSE -----------------{name} {args}")
-    r = func(*args)
+    r = func(*args) if args is not None else func()
     self.log(f"END COMPOSE -----------------{name} {args} -> {r}")
     return r
   
@@ -62,26 +64,18 @@ class Composable:
       return (terminatingUnchained, terminatingChain)
     
   def __call__(self, *args):
-    #self.log(f"------------------------------------ __call__ start")
     try:
     
       r = self._internal_call(args)
  
-      self.log(f"CHAIN {self.name} self: {self.chained} g: {self.isChained(self.g)} f: {self.isChained(self.f)}")
-      
       (terminatingUnchained, terminatingChain) = self.__getChainState()
-      
-      self.log(f"END UNCHAINED {self.name}") if terminatingUnchained else None
-      self.log(f"END CHAINED") if terminatingChain else None
       
       isSingleTuple = type(r) == type((1,)) and len(r) == 1
       shouldUnpackResult = (terminatingChain or terminatingUnchained) and isSingleTuple
       
       if (shouldUnpackResult):
         r = r[0]
-        self.log(f"UNPACKEDDD end ------------------------------------ RETURNS {r}")
       
-      self.log(f"__call__ end ------------------------------------  RETURNS {r}")
       return r
     except Exception as inst:
       self.log(f"EXCEPTION -------- {type(inst)} {inst}")
@@ -92,7 +86,6 @@ class Composable:
         newComp = Composable(self)
         self.chained = True
         newComp.chained = False
-        newComp.name = f"{self.name}+"
         otherComp = Composable(other.f)
         otherComp.chained = True
         newComp.g = otherComp

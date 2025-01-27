@@ -9,26 +9,6 @@ withStr = f(lambda x: (x, str(x)))
 strLen = f(lambda x,y: len(y))
 passthru = f(lambda x: x)
 
-def foo():
-  return None
-
-  def test_debug():
-    
-    inc1 = f(lambda x: x+1)
-    inc2 = f(lambda x: x+2)
-    inc3 = f(lambda x: x+3)
-    inc4 = f(lambda x: x+4)
-    inc5 = f(lambda x: x+5)
-    
-    inc1.name = "inc1"
-    inc2.name = "inc2"
-    inc3.name = "inc3"
-    inc4.name = "inc4"
-    inc5.name = "inc5"
-    
-    func = inc1 | inc2 | inc3 | inc4 | inc5
-    assert func(1) == 16
-
 def test_minimal_single_param():
   print("DEBUG FUNC:::::: test_minimal_single_param")
   assert inc(1) == 2
@@ -76,4 +56,15 @@ def test_iterables():
   func = rf | evens | toList | avg
   
   assert func(10) == 5
+
+def voidFunc(x):
+  print(f"I don't return anything! {x}")
   
+def voidFunc2():
+  print(f"not input, not output")
+  
+def test_void():
+  vf = f(voidFunc2)
+  func = vf | vf | vf
+  func()
+  assert True, "does not throw"
