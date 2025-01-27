@@ -25,18 +25,18 @@ class Composable:
     return target.chained
     
   def __invokeNative(self, func, name, args):
-    self.log(f"START FUNCTION -----------------{name} {args}")
+    self.log(f"START FUNCTION ----------------- {args}")
     
     r = func(*args)
     if type(r) not in [type((1,)), type(None)]: r = (r,)
     
-    self.log(f"START FUNCTION -----------------{name} {args} -> {r}")
+    self.log(f"END FUNCTION   ----------------- {args} -> {r}")
     return r
   
   def __invokeCompose(self, func, name, args):
-    self.log(f"START COMPOSE -----------------{name} {args}")
+    #self.log(f"START COMPOSE -----------------{name} {args}")
     r = func(*args) if args is not None else func()
-    self.log(f"END COMPOSE -----------------{name} {args} -> {r}")
+    #self.log(f"END COMPOSE -----------------{name} {args} -> {r}")
     return r
   
   def __internal_call(self, args):

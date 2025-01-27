@@ -7,6 +7,7 @@ f.enableLogging = True
 inc = f(lambda x: x+1)
 incPass = f(lambda x,y: (x+1, y+1))
 power = f(lambda x,y: x**y)
+splitNum = f(lambda x: (x/2, x/2))
 withStr = f(lambda x: (x, str(x)))
 strLen = f(lambda x,y: len(y))
 passthru = f(lambda x: x)
@@ -41,15 +42,24 @@ def test_various_param():
   func = incPass | power | withStr | strLen
   assert func(3, 3) == 3
 
+def test_inverse_mixmatch():
+  print("DEBUG FUNC:::::: test_inverse_mixmatch")
+  func = incPass | power | withStr | strLen
+  assert func(3, 3) == 3
+  func2 = power | splitNum | incPass | f(lambda x,y: (x/2) + (x/2)) | withStr | strLen
+  assert func2(4, 4) == 5
+  
 def rangeFactory(x):
   for i in range(1, x):
     yield i
   
 def test_collections():
+  print("DEBUG FUNC:::::: test_collections")
   pass2 = passthru | passthru | passthru
   assert pass2([1, 2, 3]) == [1, 2, 3]
 
 def test_iterables():
+  print("DEBUG FUNC:::::: test_iterables")
   rf = f(rangeFactory)
   evens = f(lambda r: filter(lambda x: x % 2 == 0, r))
   toList = f(lambda r: list(r))
@@ -59,20 +69,12 @@ def test_iterables():
   
   assert func(10) == 5
 
-def voidFunc(x):
-  print(f"I don't return anything! {x}")
-  
-def test_void2():
-  vf = f(voidFunc)
-  func = vf | vf | vf
-  func(123) #only applies 123 to first call...
-  assert True, "does not throw"
-  
-def voidFunc2():
+def voidFunc():
   print(f"not input, not output")
   
-def test_void2():
-  vf = f(voidFunc2)
+def test_void():
+  print("DEBUG FUNC:::::: test_void")
+  vf = f(voidFunc)
   func = vf | vf | vf
   func()
   assert True, "does not throw"
