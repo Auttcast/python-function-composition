@@ -27,11 +27,6 @@ class Composable:
     if not self.__isComposable(target): return None
     return target.chained
     
-  def __getType(self, target):
-    isComp = self.__isComposable(target)    
-    funcType = f"compose-{target.name}" if isComp else "!!!FUNCTION!!!"
-    return funcType
-    
 #rules:
 #single-param functions require args to pass as shape (1,)
 #multi-param functions require unpacking
@@ -67,7 +62,7 @@ class Composable:
       return (terminatingUnchained, terminatingChain)
     
   def __call__(self, *args):
-    #self.log(f"------------------------------------ __call__ start {self.__getType(self)}")
+    #self.log(f"------------------------------------ __call__ start")
     try:
     
       r = self._internal_call(args)
@@ -92,13 +87,7 @@ class Composable:
       self.log(f"EXCEPTION -------- {type(inst)} {inst}")
       raise inst
       
-#rules:
-#always return a new composition
-#where the current composer is f, and other is g
-#f may always be
   def __or__(self, other):
-#    self.log(f"COMPOSE::::::::: {self} | {other.name}")
-    #self.log(f"COMPOSE::::::::: {self.name}+ | {other.name}")
     if self.__isComposable(other):
         newComp = Composable(self)
         self.chained = True
