@@ -43,12 +43,17 @@ def test_long_comp():
   inc5 = inc | inc | inc | inc
   assert inc5(1) == 5
 
-  def test_multi_param():
-    print("DEBUG FUNC:::::: test_multi_param")
-    incPass4 = incPass | incPass | incPass | incPass
-    (r0, r1) = incPass4(1, 1)
-    assert r0 == 5 and r1 == 5
-    
+def test_single_multi_param():
+  print("DEBUG FUNC:::::: test_single_multi_param")
+  (r0, r1) = incPass(1, 1)
+  assert r0 == 2 and r1 == 2
+  
+def test_multi_param():
+  print("DEBUG FUNC:::::: test_multi_param")
+  incPass4 = incPass | incPass | incPass | incPass
+  (r0, r1) = incPass4(1, 1)
+  assert r0 == 5 and r1 == 5
+  
   def test_various_param():
     print("DEBUG FUNC:::::: test_various_param")
     func = incPass | power | withStr | strLen

@@ -29,44 +29,64 @@ class Composable:
     
   def __getType(self, target):
     isComp = self.__isComposable(target)    
-    funcType = f"compose-{target.name}" if isComp else "function"
+    funcType = f"compose-{target.name}" if isComp else "!!!FUNCTION!!!"
     return funcType
     
-  def __invoke(self, func, name, args):
-
-    r = func(*args) 
+#rules:
+#single-param functions require args to pass as shape (1,)
+#multi-param functions require unpacking
+  def __invokeNative(self, func, name, args):
+    self.log(f"START FUNCTION -----------------{name} {args}")
     
-    if not self.__isComposable(func):
-      r = (r,)
+    r = func(*args)
+    if type(r) is not type((1,)): r = (r,)
     
+    self.log(f"START FUNCTION -----------------{name} {args} -> {r}")
+    return r
+  
+  def __invokeCompose(self, func, name, args):
+    self.log(f"START COMPOSE -----------------{name} {args}")
+    r = func(*args)
+    self.log(f"END COMPOSE -----------------{name} {args} -> {r}")
     return r
   
   def _internal_call(self, args):
-    fr = self.__invoke(self.f, "f", args)
-    result = self.__invoke(self.g, "g", fr) if not self.g is None else fr  
+  
+    invokeF = self.__invokeCompose if self.__isComposable(self.f) else self.__invokeNative
+    result = invokeF(self.f, "f", args)
+    
+    if self.g is not None:
+      invokeG = self.__invokeCompose if self.__isComposable(self.g) else self.__invokeNative
+      result = invokeG(self.g, "g", result)
+      
     return result
     
+  def __getChainState(self):
+      terminatingUnchained = not self.chained and self.isChained(self.f) == None and self.isChained(self.g) == None
+      terminatingChain = not self.chained and self.isChained(self.g)
+      return (terminatingUnchained, terminatingChain)
+    
   def __call__(self, *args):
-    self.log(f"------------------------------------ __call__ start {self.__getType(self)}")
+    #self.log(f"------------------------------------ __call__ start {self.__getType(self)}")
     try:
     
       r = self._internal_call(args)
-      self.log(f"----------------- returning.... {r}")
  
       self.log(f"CHAIN {self.name} self: {self.chained} g: {self.isChained(self.g)} f: {self.isChained(self.f)}")
       
-      terminatingUnchained = not self.chained and self.isChained(self.f) == None and self.isChained(self.g) == None
-      terminatingChain = not self.chained and self.isChained(self.g)
+      (terminatingUnchained, terminatingChain) = self.__getChainState()
       
       self.log(f"END UNCHAINED {self.name}") if terminatingUnchained else None
       self.log(f"END CHAINED") if terminatingChain else None
       
-      shouldUnpackResult = (terminatingChain or terminatingUnchained)
+      isSingleTuple = type(r) == type((1,)) and len(r) == 1
+      shouldUnpackResult = (terminatingChain or terminatingUnchained) and isSingleTuple
       
-      if shouldUnpackResult:      
+      if (shouldUnpackResult):
         r = r[0]
+        self.log(f"UNPACKEDDD end ------------------------------------ RETURNS {r}")
       
-      self.log(f"------------------------------------ __call__ end {self.__getType(self)}")
+      self.log(f"__call__ end ------------------------------------  RETURNS {r}")
       return r
     except Exception as inst:
       self.log(f"EXCEPTION -------- {type(inst)} {inst}")
@@ -78,7 +98,7 @@ class Composable:
 #f may always be
   def __or__(self, other):
 #    self.log(f"COMPOSE::::::::: {self} | {other.name}")
-    self.log(f"COMPOSE::::::::: {self.name}+ | {other.name}")
+    #self.log(f"COMPOSE::::::::: {self.name}+ | {other.name}")
     if self.__isComposable(other):
         newComp = Composable(self)
         self.chained = True
