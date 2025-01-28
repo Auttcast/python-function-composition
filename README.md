@@ -31,6 +31,7 @@ When inline-composition is invoked thru the pipe operator, an addition Composabl
 Effectively, h(k(g(f(x)))) can now be represented as (f | g | k | h)(x)
 
 ## Considering TODOs
+* support for partially applied function
 * automatic wrapping for classes, attributes, etc
 * exception handling, type hinting
 
