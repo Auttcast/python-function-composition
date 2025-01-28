@@ -79,4 +79,13 @@ def test_void():
   func()
   assert True, "does not throw"
   
-
+def test_partialfunction():
+  quad = f(lambda x: (x**2) + (8*x) + 12)
+  domain = [1, 2, 3, 4, 5]
+  fmap = f(lambda c: f(lambda d: map(c, d)))
+  flist = f(list)
+  
+  comp = fmap(quad) | flist
+  r = comp(domain)
+  assert r == [21, 32, 45, 60, 77]
+  
