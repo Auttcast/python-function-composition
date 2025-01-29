@@ -1,4 +1,5 @@
-import composable
+import composable, itertools, functools, json
+from types import SimpleNamespace
 
 f = composable.Composable
 
@@ -141,7 +142,23 @@ def test_dynamic_wrapping():
   func = rf | evens | toList | avg
   assert func(10) == 5
   
-
+def createTestData():
+  doc = json.loads(open('sample.json').read(), object_hook=lambda d: SimpleNamespace(**d))
+  return doc
   
-
-
+def xtest_data_query():
+  print("DEBUG FUNC:::::: test_data_query")
+  data = createTestData()
+  authorQuery = (f(lambda x: x.models) | f(map) & (lambda x: x.author) | list ) (data)
+  distinctAuthors = list(set(authorQuery))
+  assert False
+  
+def test_data_query2():
+  print("DEBUG FUNC:::::: test_data_query2")
+  expectedAuthors = ['tencent', 'openbmb', 'deepseek-ai', 'microsoft', 'bytedance-research', 'unsloth', 'ostris', 'Qwen', 'HKUSTAudio', 'HuggingFaceTB', 'm-a-p', 'black-forest-labs', 'cyberagent', 'hexgrad', 'jinaai']
+  
+  data = createTestData()
+  foo = f(data.models) | f(map) & (lambda x: x.author) | list
+  assert len(foo()) == 10
+  
+  

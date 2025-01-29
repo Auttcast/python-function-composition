@@ -4,8 +4,9 @@ import inspect
 class Composable:
 
   enableLogging = False
-
-  def __init__(self, func: Callable):
+  
+  def __init__(self, func):
+    self.isData = not isinstance(func, Callable)
     self.f = func
     self.g = None
     self.chained = False
@@ -22,7 +23,8 @@ class Composable:
     return target.chained
     
   def __invokeNative(self, func, name, args):
-    self.log(f"START FUNCTION ----------------- {args}")
+    self.log(f"START FUNCTION ----------------- {args} isData: {self.isData}")
+    if self.isData: return (self.f,)
     r = func(*args)
     if type(r) not in [type((1,)), type(None)]: r = (r,)
     self.log(f"END FUNCTION   ----------------- {args} -> {r}")
