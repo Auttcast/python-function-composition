@@ -79,13 +79,32 @@ def test_void():
   func()
   assert True, "does not throw"
   
-def test_partialfunction():
+def test_partial_2_param_func():
+  print("DEBUG FUNC:::::: test_partial_2_param_func")
+  quad = f(lambda x: (x**2) + (8*x) + 12)
+  domain = [1, 2, 3, 4, 5]
+  fmap = f(map)
+  flist = f(list)
+  
+  comp = fmap & quad | flist
+  r = comp(domain)
+  assert r == [21, 32, 45, 60, 77]
+  
+def test_partial_1_param_nested_funcs():
+  print("DEBUG FUNC:::::: test_partial_2_nested_funcs")
   quad = f(lambda x: (x**2) + (8*x) + 12)
   domain = [1, 2, 3, 4, 5]
   fmap = f(lambda c: f(lambda d: map(c, d)))
   flist = f(list)
   
-  comp = fmap(quad) | flist
+  comp = fmap & quad | flist
   r = comp(domain)
   assert r == [21, 32, 45, 60, 77]
   
+#test_partial_3_param_func
+#test_partial_3_nested_funcs
+  
+#def test_dynamic_wrapper():
+  #todo
+  
+

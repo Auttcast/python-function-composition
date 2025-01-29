@@ -1,8 +1,5 @@
 from typing import Callable, Optional
-
-#todo
-#wrap modules/classes, decorators
-#type hinting?
+import inspect
 
 class Composable:
 
@@ -12,7 +9,7 @@ class Composable:
     self.f = func
     self.g = None
     self.chained = False
-    
+  
   def log(self, message):
     if self.enableLogging:
       print(f"DEBUG {self.__hash__()} {message}")
@@ -40,7 +37,6 @@ class Composable:
     return r
   
   def __internal_call(self, args):
-  
     invokeF = self.__invokeCompose if self.__isComposable(self.f) else self.__invokeNative
     result = invokeF(self.f, "f", args)
     
@@ -57,11 +53,8 @@ class Composable:
     
   def __call__(self, *args):
     try:
-    
       r = self.__internal_call(args)
- 
       (terminatingUnchained, terminatingChain) = self.__getChainState()
-      
       isSingleTuple = type(r) == type((1,)) and len(r) == 1
       shouldUnpackResult = (terminatingChain or terminatingUnchained) and isSingleTuple
       
@@ -73,7 +66,9 @@ class Composable:
       self.log(f"EXCEPTION -------- {type(inst)} {inst}")
       raise inst
       
+  #composition    
   def __or__(self, other):
+    self.log(f"__or__::: self {type(self)} other {type(other)}")
     if self.__isComposable(other):
         newComp = Composable(self)
         self.chained = True
@@ -85,3 +80,20 @@ class Composable:
     else:
         raise TypeError(f"Unsupported operand type(s) for |: 'Composable' and '{type(other).__name__}'")
 
+  def __getParamCount(self, func):
+    if self.__isComposable(func): return self.__getParamCount(func.f)
+        
+    finsp = func
+    if inspect.isclass(func): finsp = func.__class__.__init__
+    return len(inspect.signature(finsp).parameters)
+    
+  #partial application
+  def __and__(self, other):
+    #self.log(f"__and__::: self {selfSig} other {otherSig}")
+    isNestedFunc = self.__getParamCount(self) == 1
+    
+    if isNestedFunc:
+      return Composable(lambda x: self(other)(x))
+    return Composable(lambda x: self(other, x))
+    
+    
