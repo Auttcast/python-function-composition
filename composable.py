@@ -16,14 +16,15 @@ class Composable:
     Composable.__enableLogging = enabled
   
   def __log(self, message):
-    if self.__enableLogging:
+    if Composable.__enableLogging:
       print(f"DEBUG {self.__hash__()} {message}")
     
-  def __isComposable(self, target): return type(target) == type(self)
+  @staticmethod
+  def __isComposable(target): return isinstance(target, Composable)
     
   def __isChained(self, target) -> Optional[bool]:
     if target is None: return None
-    if not self.__isComposable(target): return None
+    if not Composable.__isComposable(target): return None
     return target.chained
     
   def __invokeNative(self, func, name, args):
@@ -39,11 +40,11 @@ class Composable:
     return r
   
   def __internal_call(self, args):
-    invokeF = self.__invokeCompose if self.__isComposable(self.f) else self.__invokeNative
+    invokeF = self.__invokeCompose if Composable.__isComposable(self.f) else self.__invokeNative
     result = invokeF(self.f, "f", args)
     
     if self.g is not None:
-      invokeG = self.__invokeCompose if self.__isComposable(self.g) else self.__invokeNative
+      invokeG = self.__invokeCompose if Composable.__isComposable(self.g) else self.__invokeNative
       result = invokeG(self.g, "g", result)
       
     return result
@@ -72,7 +73,7 @@ class Composable:
   def __or__(self, other):
     self.__log(f"__or__::: self {type(self)} other {type(other)}")
     
-    if not self.__isComposable(other): other = Composable(other)
+    if not Composable.__isComposable(other): other = Composable(other)
 
     newComp = Composable(self)
     self.chained = True
@@ -83,7 +84,7 @@ class Composable:
     return newComp
 
   def __getParamCount(self, func):
-    if self.__isComposable(func): return self.__getParamCount(func.f)
+    if Composable.__isComposable(func): return self.__getParamCount(func.f)
     finsp = func
     if inspect.isclass(func): finsp = func.__call__
     return len(inspect.signature(finsp).parameters)
