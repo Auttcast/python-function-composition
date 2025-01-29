@@ -23,17 +23,13 @@ class Composable:
     
   def __invokeNative(self, func, name, args):
     self.log(f"START FUNCTION ----------------- {args}")
-    
     r = func(*args)
     if type(r) not in [type((1,)), type(None)]: r = (r,)
-    
     self.log(f"END FUNCTION   ----------------- {args} -> {r}")
     return r
   
   def __invokeCompose(self, func, name, args):
-    #self.log(f"START COMPOSE -----------------{name} {args}")
     r = func(*args) if args is not None else func()
-    #self.log(f"END COMPOSE -----------------{name} {args} -> {r}")
     return r
   
   def __internal_call(self, args):
@@ -69,20 +65,19 @@ class Composable:
   #composition    
   def __or__(self, other):
     self.log(f"__or__::: self {type(self)} other {type(other)}")
-    if self.__isComposable(other):
-        newComp = Composable(self)
-        self.chained = True
-        newComp.chained = False
-        otherComp = Composable(other.f)
-        otherComp.chained = True
-        newComp.g = otherComp
-        return newComp
-    else:
-        raise TypeError(f"Unsupported operand type(s) for |: 'Composable' and '{type(other).__name__}'")
+    
+    if not self.__isComposable(other): other = Composable(other)
+
+    newComp = Composable(self)
+    self.chained = True
+    newComp.chained = False
+    otherComp = Composable(other.f)
+    otherComp.chained = True
+    newComp.g = otherComp
+    return newComp
 
   def __getParamCount(self, func):
     if self.__isComposable(func): return self.__getParamCount(func.f)
-        
     finsp = func
     if inspect.isclass(func): finsp = func.__call__
     return len(inspect.signature(finsp).parameters)

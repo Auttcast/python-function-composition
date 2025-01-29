@@ -130,7 +130,18 @@ def test_partial_multi_param_funcs_value_binding():
   assert comp(1) == 5
   assert comp(9) == 1
   
-#def test_dynamic_wrapper():
-  #todo
+def test_dynamic_wrapping():
+  print("DEBUG FUNC:::::: test_dynamic_wrapping")
   
+  #test_iterables without f-wrap
+  rf = f(rangeFactory)
+  evens = lambda r: filter(lambda x: x % 2 == 0, r)
+  toList = lambda r: list(r)
+  avg = lambda r: sum(r) / len(r)  
+  func = rf | evens | toList | avg
+  assert func(10) == 5
+  
+
+  
+
 
