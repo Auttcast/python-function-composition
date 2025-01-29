@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 f = composable.Composable
 
-f.logging(True)
+f._logging(True)
 
 inc = f(lambda x: x+1)
 incPass = f(lambda x,y: (x+1, y+1))
@@ -149,7 +149,7 @@ def createTestData():
 def xtest_data_query():
   print("DEBUG FUNC:::::: test_data_query")
   data = createTestData()
-  authorQuery = (f(lambda x: x.models) | f(map) & (lambda x: x.author) | list ) (data)
+  authorQuery = (f(lambda x: x.models) | f.map & (lambda x: x.author) | list ) (data)
   distinctAuthors = list(set(authorQuery))
   assert False
   
@@ -158,7 +158,7 @@ def test_data_query2():
   expectedAuthors = ['tencent', 'openbmb', 'deepseek-ai', 'microsoft', 'bytedance-research', 'unsloth', 'ostris', 'Qwen', 'HKUSTAudio', 'HuggingFaceTB', 'm-a-p', 'black-forest-labs', 'cyberagent', 'hexgrad', 'jinaai']
   
   data = createTestData()
-  foo = f(data.models) | f(map) & (lambda x: x.author) | list
+  foo = f(data.models) | f.map & (lambda x: x.author) | list
   actualAuthors = foo()
   assert expectedAuthors == actualAuthors
   

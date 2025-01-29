@@ -12,7 +12,7 @@ class Composable:
     self.chained = False
   
   @staticmethod
-  def logging(enabled):
+  def _logging(enabled):
     Composable.__enableLogging = enabled
   
   def __log(self, message):
@@ -109,5 +109,12 @@ class Composable:
       return Composable(lambda x: self(other)(x))
     return self.__curry_inline(self, other, selfArgCount)
 
+
+import functools
+
+Composable.map = Composable(map)
+Composable.filter = Composable(filter)
+Composable.reduce = Composable(functools.reduce)
+Composable.list = Composable(list)
 
 
