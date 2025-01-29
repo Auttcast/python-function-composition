@@ -12,6 +12,7 @@ withStr = f(lambda x: (x, str(x)))
 strLen = f(lambda x,y: len(y))
 passthru = f(lambda x: x)
 
+
 def test_minimal_single_param():
   print("DEBUG FUNC:::::: test_minimal_single_param")
   assert inc(1) == 2
@@ -94,15 +95,40 @@ def test_partial_1_param_nested_funcs():
   print("DEBUG FUNC:::::: test_partial_2_nested_funcs")
   quad = f(lambda x: (x**2) + (8*x) + 12)
   domain = [1, 2, 3, 4, 5]
-  fmap = f(lambda c: f(lambda d: map(c, d)))
+  fmap = f(lambda c: lambda d: map(c, d))
   flist = f(list)
   
   comp = fmap & quad | flist
   r = comp(domain)
   assert r == [21, 32, 45, 60, 77]
   
-#test_partial_3_param_func
-#test_partial_3_nested_funcs
+def test_partial_multi_param_func():
+  print("DEBUG FUNC:::::: test_partial_3_param_func")
+  
+  mf = f(lambda xfilter, mapper, data: list(filter(xfilter, map(mapper, data))))
+  square = f(lambda x: x**2)
+  isEven = f(lambda x: x % 2 == 0)
+  flist = f(list)
+  
+  comp = mf & isEven & square
+  
+  assert comp([1, 2, 3, 4, 5]) == [4, 16]
+  
+def test_partial_multi_nested_funcs_value_binding():
+  print("DEBUG FUNC:::::: test_partial_multi_nested_funcs_value_binding")
+  
+  mathx = f(lambda a: lambda b: lambda c: lambda d: (a*b)/(c+d))
+  comp = mathx & 2 & 5 & 1
+  assert comp(1) == 5
+  assert comp(9) == 1
+  
+def test_partial_multi_param_funcs_value_binding():
+  print("DEBUG FUNC:::::: test_partial_multi_param_funcs_value_binding")
+  
+  mathx = f(lambda a, b, c, d: (a*b)/(c+d))
+  comp = mathx & 2 & 5 & 1
+  assert comp(1) == 5
+  assert comp(9) == 1
   
 #def test_dynamic_wrapper():
   #todo

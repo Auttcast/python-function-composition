@@ -63,7 +63,7 @@ class Composable:
       
       return r
     except Exception as inst:
-      self.log(f"EXCEPTION -------- {type(inst)} {inst}")
+      self.log(f"EXCEPTION -------- {type(inst)} {inst} ARGS {args}")
       raise inst
       
   #composition    
@@ -84,16 +84,28 @@ class Composable:
     if self.__isComposable(func): return self.__getParamCount(func.f)
         
     finsp = func
-    if inspect.isclass(func): finsp = func.__class__.__init__
+    if inspect.isclass(func): finsp = func.__call__
     return len(inspect.signature(finsp).parameters)
     
+  def __curry_inline(self, fleft, fright, argCount):
+    match argCount:
+      case 2: return Composable(lambda x: fleft(fright, x))
+      case 3: return Composable(lambda x1, x2: fleft(fright, x1, x2))
+      case 4: return Composable(lambda x1, x2, x3: fleft(fright, x1, x2, x3))
+      case 5: return Composable(lambda x1, x2, x3, x4: fleft(fright, x1, x2, x3, x4))
+      case 6: return Composable(lambda x1, x2, x3, x4, x5: fleft(fright, x1, x2, x3, x4, x5))
+      case 7: return Composable(lambda x1, x2, x3, x4, x5, x6: fleft(fright, x1, x2, x3, x4, x5, x6))
+      case 8: return Composable(lambda x1, x2, x3, x4, x5, x6, x7: fleft(fright, x1, x2, x3, x4, x5, x6, x7))
+      case _: raise f"unsupported argument count {argCount}"
+        
   #partial application
   def __and__(self, other):
-    #self.log(f"__and__::: self {selfSig} other {otherSig}")
-    isNestedFunc = self.__getParamCount(self) == 1
+    selfArgCount = self.__getParamCount(self)
+    assumeNested = selfArgCount == 1
     
-    if isNestedFunc:
+    if assumeNested: 
       return Composable(lambda x: self(other)(x))
-    return Composable(lambda x: self(other, x))
-    
-    
+    return self.__curry_inline(self, other, selfArgCount)
+
+
+
