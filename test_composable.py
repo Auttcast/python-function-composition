@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 f = composable.Composable
 
-f.enableLogging = True
+f.logging(True)
 
 inc = f(lambda x: x+1)
 incPass = f(lambda x,y: (x+1, y+1))
@@ -159,6 +159,7 @@ def test_data_query2():
   
   data = createTestData()
   foo = f(data.models) | f(map) & (lambda x: x.author) | list
-  assert len(foo()) == 10
+  actualAuthors = foo()
+  assert expectedAuthors == actualAuthors
   
   

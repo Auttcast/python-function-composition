@@ -3,7 +3,7 @@ import inspect
 
 class Composable:
 
-  enableLogging = False
+  __enableLogging = False
   
   def __init__(self, func):
     self.isData = not isinstance(func, Callable)
@@ -11,23 +11,27 @@ class Composable:
     self.g = None
     self.chained = False
   
-  def log(self, message):
-    if self.enableLogging:
+  @staticmethod
+  def logging(enabled):
+    Composable.__enableLogging = enabled
+  
+  def __log(self, message):
+    if self.__enableLogging:
       print(f"DEBUG {self.__hash__()} {message}")
     
   def __isComposable(self, target): return type(target) == type(self)
     
-  def isChained(self, target) -> Optional[bool]:
+  def __isChained(self, target) -> Optional[bool]:
     if target is None: return None
     if not self.__isComposable(target): return None
     return target.chained
     
   def __invokeNative(self, func, name, args):
-    self.log(f"START FUNCTION ----------------- {args} isData: {self.isData}")
+    self.__log(f"START FUNCTION ----------------- {args} isData: {self.isData}")
     if self.isData: return (self.f,)
     r = func(*args)
     if type(r) not in [type((1,)), type(None)]: r = (r,)
-    self.log(f"END FUNCTION   ----------------- {args} -> {r}")
+    self.__log(f"END FUNCTION   ----------------- {args} -> {r}")
     return r
   
   def __invokeCompose(self, func, name, args):
@@ -45,8 +49,8 @@ class Composable:
     return result
     
   def __getChainState(self):
-      terminatingUnchained = not self.chained and self.isChained(self.f) == None and self.isChained(self.g) == None
-      terminatingChain = not self.chained and self.isChained(self.g)
+      terminatingUnchained = not self.chained and self.__isChained(self.f) == None and self.__isChained(self.g) == None
+      terminatingChain = not self.chained and self.__isChained(self.g)
       return (terminatingUnchained, terminatingChain)
     
   def __call__(self, *args):
@@ -61,12 +65,12 @@ class Composable:
       
       return r
     except Exception as inst:
-      self.log(f"EXCEPTION -------- {type(inst)} {inst} ARGS {args}")
+      self.__log(f"EXCEPTION -------- {type(inst)} {inst} ARGS {args}")
       raise inst
       
   #composition    
   def __or__(self, other):
-    self.log(f"__or__::: self {type(self)} other {type(other)}")
+    self.__log(f"__or__::: self {type(self)} other {type(other)}")
     
     if not self.__isComposable(other): other = Composable(other)
 
