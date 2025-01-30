@@ -3,7 +3,7 @@ class distinctGenerator():
   #stop generating when parent object
   keys = {}
 
-  def __init__(self, ):
+  #def __init__(self, ):
 
   def __iter__(self): 
     return self
@@ -15,7 +15,7 @@ class distinctGenerator():
       self.start += 1
     return current
 
-  def receiveData(data):
+  #def receiveData(data):
   
 
 class deepYield():
@@ -30,7 +30,7 @@ class deepYield():
     if not oh in self.h:
       self.h[oh] = distinctGenerator()
   
-  def remove(self, obj):
+ # def remove(self, obj):
     
   
   def __init__(self):
@@ -66,8 +66,24 @@ def evalShapeWithContext(obj, context):
   
   return r
   
+def __evalShape(obj):
+  if isinstance(obj, list):
+    r = []
+    for prop in obj:
+      p = __evalShape(prop)
+      if p not in r:
+        r.append(p)
+    return r
+  elif hasattr(obj, "__dict__"):
+    v = vars(obj)
+    r = {k: __evalShape(v.get(k)) for k in v.keys()}
+  else:
+    return type(obj).__name__
+
 def evalShape(obj):
   dy = deepYield()
   context = evalShapeWithContext(obj, dy)
-  return context
+  return __evalShape(obj)
+
+
 

@@ -118,20 +118,6 @@ class Composable:
 import functools
 
 f = Composable
-
-def evalShape(obj, context):
-  if isinstance(obj, list):
-    r = []
-    for prop in obj:
-      p = evalShape(prop)
-      if p not in r:
-        r.append(p)
-    return r
-  elif hasattr(obj, "__dict__"):
-    v = vars(obj)
-    r = {k: evalShape(v.get(k)) for k in v.keys()}
-  else:
-    return type(obj).__name__
   
 f.map = Composable(map)
 f.filter = f(filter)

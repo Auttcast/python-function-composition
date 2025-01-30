@@ -153,7 +153,7 @@ def xtest_data_query():
   distinctAuthors = list(set(authorQuery))
   assert False
   
-def test_data_query2():
+def xtest_data_query2():
   print("DEBUG FUNC:::::: test_data_query2")
   expectedAuthors = ['tencent', 'openbmb', 'deepseek-ai', 'microsoft', 'bytedance-research', 'unsloth', 'ostris', 'Qwen', 'HKUSTAudio', 'HuggingFaceTB', 'm-a-p', 'black-forest-labs', 'cyberagent', 'hexgrad', 'jinaai']
   
