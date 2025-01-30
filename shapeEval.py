@@ -1,89 +1,78 @@
 
 class distinctGenerator():
-  #stop generating when parent object
-  keys = {}
 
-  #def __init__(self, ):
+  def __init__(self, parent=None):
+    self.parent = parent
+    self.tracking = set()
+    self.buffer = []
 
-  def __iter__(self): 
+  def __iter__(self):
     return self
 
   def __next__(self):
-    if self.start >= self.stop:
-      raise StopIteration
-      current = self.start * self.start
-      self.start += 1
-    return current
+    return iter(self.buffer)
+
+  def send(self, data):
+    for d in data:
+      if d not in self.tracking:
+        self.tracking.add(d)
+        self.buffer.append(d)
 
   #def receiveData(data):
   
-
+#matches a distinctGenerator with document path
 class deepYield():
-  
-  keyCont = []#'dict.prop.list.dict.prop
-  
-  def getKey(self):
-    return '.'.join(keyCont)
+
+  def __init__(self):
+    self.h = {} # {path: distinctGenerator}
+    self.currentPath = []#'dict.prop.list.dict.prop
+    self.iterGraph = None
+
+  def __getKey(self):
+    return '.'.join(self.currentPath)
   
   def add(self, obj):
     oh = type(obj).__name__
     if not oh in self.h:
       self.h[oh] = distinctGenerator()
   
- # def remove(self, obj):
-    
-  
-  def __init__(self):
-    self.h = {}
-  
+  def remove(self, obj):
+    self.__getKey()
+
   def iterList(self, xList):
-    self.getKey()
+    self.__getKey()
     
   def iterDict(self, xDict):
-    self.getKey()
+    self.__getKey()
+
+  def value(self):
+    self.__getKey()
+
+  def result(self):
+    return self.iterGraph #todo expand
     
 def evalShapeWithContext(obj, context):
-  r = None
-  
   isList = isinstance(obj, list)
   isDict = hasattr(obj, "__dict__")
-  
-  moveContext = isList or isDict
-  if moveContext: context.add(obj)
-  
+
   if isList:
-    r = []
+    context.add(obj)
     for prop in context.iterList(obj):
-      p = evalShapeWithContext(prop, context)
-      r.append(p)
+      evalShapeWithContext(prop, context)
   elif isDict:
+    context.add(obj)
     v = vars(obj)
-    r = {k: evalShapeWithContext(v.get(k), context) for k in context.iterDict(list(v.keys()))}
+    for k in context.iterDict(list(v.keys())):
+      evalShapeWithContext(v.get(k), context)
+    context.remove(obj)
   else:
-    r = type(obj).__name__
-  
-  if moveContext: context.remove(obj)
-  
-  return r
-  
-def __evalShape(obj):
-  if isinstance(obj, list):
-    r = []
-    for prop in obj:
-      p = __evalShape(prop)
-      if p not in r:
-        r.append(p)
-    return r
-  elif hasattr(obj, "__dict__"):
-    v = vars(obj)
-    r = {k: __evalShape(v.get(k)) for k in v.keys()}
-  else:
-    return type(obj).__name__
+    context.value(type(obj).__name__)
+
 
 def evalShape(obj):
   dy = deepYield()
-  context = evalShapeWithContext(obj, dy)
-  return __evalShape(obj)
+  evalShapeWithContext(obj, dy)
+  dy.result()
 
 
 
