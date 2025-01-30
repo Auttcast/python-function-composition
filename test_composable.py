@@ -158,8 +158,14 @@ def test_data_query2():
   expectedAuthors = ['tencent', 'openbmb', 'deepseek-ai', 'microsoft', 'bytedance-research', 'unsloth', 'ostris', 'Qwen', 'HKUSTAudio', 'HuggingFaceTB', 'm-a-p', 'black-forest-labs', 'cyberagent', 'hexgrad', 'jinaai']
   
   data = createTestData()
-  foo = f(data.models) | f.map & (lambda x: x.author) | list
-  actualAuthors = foo()
+  actualAuthors = f(data.models) > f.map & (lambda x: x.author) | f.distinct
   assert expectedAuthors == actualAuthors
   
-  
+def xtestSnippet():
+    
+  import composable, itertools, functools, json, pprint
+  from types import SimpleNamespace
+  data = json.loads(open('sample.json').read(), object_hook=lambda d: SimpleNamespace(**d))
+  result = f(data) > f.shape
+  pprint.pprint(result, indent=2)
+

@@ -1,5 +1,6 @@
 from typing import Callable, Optional
 import inspect
+from collections.abc import Iterable
 
 class Composable:
 
@@ -109,12 +110,34 @@ class Composable:
       return Composable(lambda x: self(other)(x))
     return self.__curry_inline(self, other, selfArgCount)
 
+  def __lt__(self, other):
+    data = other.f
+    nextFunc = self
+    return nextFunc(data)
 
 import functools
 
-Composable.map = Composable(map)
-Composable.filter = Composable(filter)
-Composable.reduce = Composable(functools.reduce)
-Composable.list = Composable(list)
+f = Composable
 
+def evalShape(obj, context):
+  if isinstance(obj, list):
+    r = []
+    for prop in obj:
+      p = evalShape(prop)
+      if p not in r:
+        r.append(p)
+    return r
+  elif hasattr(obj, "__dict__"):
+    v = vars(obj)
+    r = {k: evalShape(v.get(k)) for k in v.keys()}
+  else:
+    return type(obj).__name__
+  
+f.map = Composable(map)
+f.filter = f(filter)
+f.reduce = Composable(functools.reduce)
+f.list = Composable(list)
+f.distinct = Composable(lambda x: list(set(x)))
+f.flatmap = Composable(lambda f, xs: [y for ys in xs for y in f(ys)])
+#f.shape = Composable(evalShape)
 
