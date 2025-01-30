@@ -8,10 +8,20 @@ def test_distinct_generator():
   sut.send([1, 2, 3, 3, 3, 1, 1, 4, 5])
   assert list(sut) == [1, 2, 3, 4, 5]
 
-def test_deepYield_primitive():
+
+def test_deepYield_primitive_int():
   sut = deepYield()
   sut.value(123)
   assert sut.result() == 'int'
+
+
+def test_deepYield_primitive_arr():
+  sut = deepYield()
+  input = [1, 2, 3]
+  x = list(sut.iterList([1, 2, 3]))
+  assert x == input
+  assert sut.result() == ['int']
+
 
 def xtest_deepYield_base_dict():
   #every document should be type {} or [] at root
