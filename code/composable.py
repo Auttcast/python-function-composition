@@ -1,6 +1,5 @@
 from typing import Callable, Optional
-import inspect
-from collections.abc import Iterable
+import inspect, functools, quicklog
 
 class Composable:
 
@@ -9,6 +8,8 @@ class Composable:
   def __init__(self, func):
     self.isData = not isinstance(func, Callable)
     self.f = func
+    #if not self.isData:
+      #functools.update_wrapper(self, self.f)
     self.g = None
     self.chained = False
   
@@ -18,7 +19,7 @@ class Composable:
   
   def __log(self, message):
     if Composable.__enableLogging:
-      print(f"DEBUG {self.__hash__()} {message}")
+      quicklog.log(f"DEBUG {self.__hash__()} {message}")
     
   @staticmethod
   def __isComposable(target): return isinstance(target, Composable)
@@ -114,16 +115,3 @@ class Composable:
     data = other.f
     nextFunc = self
     return nextFunc(data)
-
-import functools
-
-f = Composable
-  
-f.map = Composable(map)
-f.filter = f(filter)
-f.reduce = Composable(functools.reduce)
-f.list = Composable(list)
-f.distinct = Composable(lambda x: list(set(x)))
-f.flatmap = Composable(lambda f, xs: [y for ys in xs for y in f(ys)])
-#f.shape = Composable(evalShape)
-

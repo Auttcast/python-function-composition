@@ -1,131 +1,158 @@
+from typing import Union, Self, Any
+import sys, pprint
+import quicklog
 
-class distinctGenerator():
+class shapeNode:
+  def __init__(self, containerType: Union[list|dict|str|None]=None, value:str=None, parent=None):
+    self.containerType : Union[list|dict|str|None] = containerType
+    self.value : str = value
+    self.parent:shapeNode = parent
+    self.children:[shapeNode] = []
 
-  def __init__(self, parent=None):
-    self.parent = parent
-    self.tracking = set()
-    self.buffer = []
+  def addChild(self, node) -> Self:
+    node.parent = self
+    self.children.append(node)
+    return node
 
-  def __iter__(self):
-    return iter(self.buffer)
+  def hasChildWithContainer(self, rawType, outParam:list):
+    if self.children is None: return False
+    for c in self.children:
+      if c.containerType == rawType:
+        outParam.append(c)
+        return True
 
-  def send(self, data):
-    for d in data:
-      if d not in self.tracking:
-        self.tracking.add(d)
-        self.buffer.append(d)
+  def isDictKey(self): isinstance(self.containerType, str)
+  def isDictionary(self): isinstance(self.containerType, dict)
+  def isList(self): isinstance(self.containerType, list)
 
-  #def receiveData(data):
-  
-#matches a distinctGenerator with document path
-class deepYield():
+  def hasChildren(self): return len(self.children) > 0
 
+  #might create a set for cache
+  def hasChildWithValue(self, value):
+    for c in self.children:
+      if c.value == value:
+        return True
+    return False
+
+class nodeWriter():
   def __init__(self):
-    self.h = {} # {path: distinctGenerator}
-    self.currentPath = []#'dict.prop.list.dict.prop
-    self.iterGraph = None
-    self.graphSetter = None
+    self.h: Union[shapeNode|None] = None
+    self.currentNode: Union[shapeNode|None] = None
 
-  def __getKey(self):
-    return '.'.join(self.currentPath)
+  def apop(self): self.currentNode = self.currentNode.parent
 
-  def dictSetter(self, k, v):
+  def pushContainer(self, rawType):
 
-    self.currentPath.append('set')
-    self.iterGraph[k] = v
+    newNode = shapeNode(containerType=rawType)
 
-  def listSetter(self, x):
-    self.currentPath.append('list')
-    self.iterGraph.append(x)
-
-  def __addDict(self, key, value):
-    if self.iterGraph is None:
-      self.iterGraph = dict()
-      self.graphSetter = self.dictSetter
+    if self.h is None:
+      self.currentNode = newNode
+      self.h = self.currentNode
     else:
-      #use setter of parent object
-      self.graphSetter(dict())
+      outParam = []
+      if self.currentNode.hasChildWithContainer(rawType, outParam):
+        self.currentNode = outParam[0]
+        return
 
+      self.currentNode = self.currentNode.addChild(newNode)
 
-  def __addList(self, obj):
-    if self.iterGraph is None:
-      self.iterGraph = []
+  def pushList(self): self.pushContainer([])
+  def pushDict(self): self.pushContainer({})
+  def pushDictKey(self, key): self.pushContainer(key)
+
+  def writeName(self, value):
+    name = type(value).__name__
+    node = shapeNode(value=name)
+    if self.h is None:
+      self.h = node
     else:
-      #use setter of parent object
-      self.graphSetter([])
+      if not self.currentNode.hasChildWithValue(name):
+        self.currentNode.addChild(node)
 
-    self.graphSetter = lambda g, x: g.append(x)
-    oh = self.__getKey()
-    if not oh in self.h:
-      self.h[oh] = distinctGenerator()
-  
-  def remove(self, obj):
-    self.__getKey()
+def getPathToNodeRecurse(node):
+  yield node.containerType
+  if node.parent is not None:
+    getPathToNodeRecurse(node.parent)
 
-  def iterList(self, xList):
-    self.__addList([])
-    for x in xList:
-      yield x
-    
-  def iterDict(self, xDict):
-    self.__getKey()
-    for x in xDict:
-#      self.add(
-      yield x
+def getPathToNode(node):
+  return "->".join(list(reversed(getPathToNodeRecurse(node))))
 
-  def value(self, v):
-
-    if self.iterGraph == None:
-      #no context was set and the structure is simply this.
-      self.iterGraph = type(v).__name__
-
-    #todo send name to the current generator
-    #update graphe
-
-  def result(self):
-    return self.iterGraph #todo expand
-
-#desire to seperate creation of structure from hierarchy
-class deepYield2():
-
-  def iterList(self):
-
-
-def evalShapeWithContext2(obj, context):
-  isList = isinstance(obj, list)
-  isDict = hasattr(obj, "__dict__")
-
-  if isList:
-    for prop in context.iterList(obj):
-      evalShapeWithContext(prop, context)
-  elif isDict:
-    v = vars(obj)
-    for k in context.iterDict(list(v.keys())):
-      evalShapeWithContext(v.get(k), context)
-    context.remove(obj)
+def nodeGraphToObj_dictKeyEval(nodes:shapeNode) -> Any :
+  if len(nodes) == 1: return nodeGraphToObj(nodes[0])
   else:
-    context.value(type(obj).__name__)
+    notNone = lambda x: x is not None
+    nodeValues = list(map(lambda x: x.value, nodes))
+    nodeCont = list(map(lambda x: x.containerType, nodes))
+    values = list(filter(notNone, nodeValues))
+    containers = list(filter(notNone, nodeCont))
+    hasPrimitives = any(values)
+    hasContainers = any(containers)
 
-def evalShapeWithContext(obj, context):
-  isList = isinstance(obj, list)
-  isDict = hasattr(obj, "__dict__")
+    if hasPrimitives and not hasContainers:
+      return "|".join(nodeValues)
 
-  if isList:
-    for prop in context.iterList(obj):
-      evalShapeWithContext(prop, context)
-  elif isDict:
-    v = vars(obj)
-    for k in context.iterDict(list(v.keys())):
-      evalShapeWithContext(v.get(k), context)
-    context.remove(obj)
+    path = getPathToNode(nodes[0].parent.parent)
+    key = nodes[0].parent
+    strRep = getPathToNode(nodes[0])
+
+    if hasPrimitives and hasContainers:
+      #in the case a dictionary has keys of differing types (other than None),
+      #will issue a warning and continue processing with the container
+      sys.stderr.writelines(f"WARNING: {path} dictionary key {key} contains both primitives and values: {strRep}")
+      return "|".join(nodeValues + nodeCont)
+    elif not hasPrimitives and hasContainers:
+      sys.stderr.writelines(f"ERROR: {path} dictionary key {key} contains both array and dictionary accessors: {strRep}")
+      return "|".join(nodeCont)
+
+def nodeGraphToObj(node:shapeNode) -> Any :
+  #print(f"node type: {node.containerType} value: {node.value}")
+  if node.value is not None: return node.value
+  if isinstance(node.containerType, dict):
+    return {c.containerType: nodeGraphToObj_dictKeyEval(c.children) for c in node.children}
+  if isinstance(node.containerType, list):
+    return [nodeGraphToObj(c) for c in node.children]
+    ##return list(functools.reduce(lambda x, y: x + [y] if y not in x else x, pnodes, []))
+
+
+def dictKv(obj):
+  if isinstance(obj, dict):
+    for k in obj:
+      yield (k, obj[k])
   else:
-    context.value(type(obj).__name__)
+    v = vars(obj)
+    for k in vars(obj).keys():
+      yield (k, v.get(k))
+
+def normalizeType(obj):
+  if hasattr(obj, "__dict__"):
+    obj = obj.__dict__
+  return obj
+
+def objectCrawler(obj, nodeWriter):
+
+  obj = normalizeType(obj)
+
+  if isinstance(obj, list):
+    nodeWriter.pushList()
+    for prop in obj:
+      objectCrawler(prop, nodeWriter)
+    nodeWriter.apop()
+  elif isinstance(obj, dict):
+    nodeWriter.pushDict()
+    for (key, value) in dictKv(obj):
+      nodeWriter.pushDictKey(key)
+      objectCrawler(value, nodeWriter)
+      nodeWriter.apop()
+    nodeWriter.apop()
+  else:
+    nodeWriter.writeName(obj)
 
 
 def evalShape(obj):
-  dy = deepYield()
-  evalShapeWithContext(obj, dy)
-  dy.result()
-
-
+  w = nodeWriter()
+  objectCrawler(obj, w)
+  r = nodeGraphToObj(w.h)
+  if quicklog.enableProdWriting:
+    pprint.pprint(r, indent=2)
+  return r
 
