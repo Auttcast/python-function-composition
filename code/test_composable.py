@@ -1,4 +1,6 @@
-import composable, json, testBase
+import inspect
+
+import composable, testBase
 from quicklog import tracelog, log
 
 f = composable.Composable
