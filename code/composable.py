@@ -1,6 +1,8 @@
 from typing import Callable, Optional
 import inspect, quicklog
 
+enableLogging = False
+
 class Composable:
 
   def __init__(self, func):
@@ -10,7 +12,8 @@ class Composable:
     self.chained = False
 
   def __log(self, message):
-    quicklog.log(f"DEBUG {self.__hash__()} {message}")
+    if enableLogging:
+      quicklog.log(f"DEBUG {self.__hash__()} {message}")
 
   def __isChained(self, target) -> Optional[bool]:
     if target is None: return None
@@ -22,7 +25,7 @@ class Composable:
     if self.isData: return (self.f,)
     r = func(*args)
     if type(r) not in [type((1,)), type(None)]: r = (r,)
-    self.__log(f"END FUNCTION   ----------------- {args} -> {r}")
+    self.__log(f"END FUNCTION   ----------------- {args} ->  isData: {self.isData} r: {r}")
     return r
   
   def __invokeCompose(self, func, name, args):
@@ -30,13 +33,15 @@ class Composable:
     return r
   
   def __internal_call(self, args):
+    #self.__log(f"START __internal_call ----------------- {args} isData: {self.isData}")
     invokeF = self.__invokeCompose if isinstance(self.f, Composable) else self.__invokeNative
     result = invokeF(self.f, "f", args)
     
     if self.g is not None:
       invokeG = self.__invokeCompose if isinstance(self.g, Composable) else self.__invokeNative
       result = invokeG(self.g, "g", result)
-      
+
+    #self.__log(f"END __internal_call ----------------- {args} isData: {self.isData}")
     return result
     
   def __getChainState(self):
@@ -51,9 +56,9 @@ class Composable:
       isSingleTuple = type(r) == type((1,)) and len(r) == 1
       shouldUnpackResult = (terminatingChain or terminatingUnchained) and isSingleTuple
       
-      if (shouldUnpackResult):
+      if shouldUnpackResult:
         r = r[0]
-      
+
       return r
     except Exception as inst:
       self.__log(f"EXCEPTION -------- {type(inst)} {inst} ARGS {args}")
@@ -69,10 +74,12 @@ class Composable:
     if not isinstance(other, Composable): other = Composable.__internalFactory(other)
 
     newComp = Composable.__internalFactory(self)
+    newComp.isData = self.isData
     self.chained = True
     newComp.chained = False
     otherComp = Composable.__internalFactory(other.f)
     otherComp.chained = True
+    otherComp.isData = self.isData
     newComp.g = otherComp
 
     return newComp
@@ -106,4 +113,9 @@ class Composable:
   def __lt__(self, other):
     data = other.f
     nextFunc = self
-    return nextFunc(data)
+    result = nextFunc(data)
+    #self.__log(f"::::TUPLE DATA: {result}")
+    #self.__log(f"::::TUPLE: {isinstance(result, tuple)} LEN {len(result)}")
+    if isinstance(result, tuple) and len(result) == 1:
+      result = result[0]
+    return result

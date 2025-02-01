@@ -1,6 +1,7 @@
 import inspect
 
 import composable, testBase
+import quicklog
 from quicklog import tracelog, log
 
 f = composable.Composable
@@ -139,18 +140,3 @@ def test_dynamic_wrapping():
   avg = lambda r: sum(r) / len(r)  
   func = rf | evens | toList | avg
   assert func(10) == 5
-
-@tracelog("test_data_query")
-def xtest_data_query():
-  data = testBase.getSampleData()
-  authorQuery = (f(lambda x: x.models) | f.map & (lambda x: x.author) | list ) (data)
-  distinctAuthors = list(set(authorQuery))
-  assert False
-  
-@tracelog("test_data_query2")
-def xtest_data_query2():
-  expectedAuthors = ['tencent', 'openbmb', 'deepseek-ai', 'microsoft', 'bytedance-research', 'unsloth', 'ostris', 'Qwen', 'HKUSTAudio', 'HuggingFaceTB', 'm-a-p', 'black-forest-labs', 'cyberagent', 'hexgrad', 'jinaai']
-  
-  data = testBase.getSampleData()
-  actualAuthors = f(data.models) > f.map & (lambda x: x.author) | f.distinct
-  assert expectedAuthors == actualAuthors

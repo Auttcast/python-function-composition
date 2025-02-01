@@ -1,4 +1,4 @@
-import shapeEval, json
+import shapeEval, json, quicklog
 from shapeEval import evalShape, shapeNode
 from types import SimpleNamespace
 from quicklog import tracelog

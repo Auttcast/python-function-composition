@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from typing import Union, Self, Any
 import sys, pprint
 import quicklog
@@ -147,12 +148,10 @@ def objectCrawler(obj, nodeWriter):
   else:
     nodeWriter.writeName(obj)
 
-
 def evalShape(obj):
   w = nodeWriter()
   objectCrawler(obj, w)
-  r = nodeGraphToObj(w.h)
-  if quicklog.enableProdWriting:
-    pprint.pprint(r, indent=2)
-  return r
+  return nodeGraphToObj(w.h)
 
+def printShape(obj):
+  pprint.pprint(evalShape(obj), indent=2)

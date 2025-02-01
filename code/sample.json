@@ -30,7 +30,7 @@
 			"private": false,
 			"repoType": "model",
 			"isLikedByUser": false,
-			"widgetOutputUrls": []
+			"widgetOutputUrls": ["foo"]
 		},
 		{
 			"author": "deepseek-ai",
@@ -77,7 +77,7 @@
 			"private": false,
 			"repoType": "model",
 			"isLikedByUser": false,
-			"widgetOutputUrls": []
+			"widgetOutputUrls": ["foo1"]
 		},
 		{
 			"author": "tencent",
@@ -124,7 +124,7 @@
 			"private": false,
 			"repoType": "model",
 			"isLikedByUser": false,
-			"widgetOutputUrls": []
+			"widgetOutputUrls": ["foo2"]
 		},
 		{
 			"author": "hexgrad",
@@ -148,7 +148,8 @@
 			"pipeline_tag": "text-to-speech",
 			"private": false,
 			"repoType": "model",
-			"isLikedByUser": false
+			"isLikedByUser": false,
+			"widgetOutputUrls": ["foo2"]
 		},
 		{
 			"author": "HKUSTAudio",
