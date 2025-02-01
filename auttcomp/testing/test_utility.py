@@ -1,7 +1,6 @@
+from ..quicklog import tracelog, log
+from ..extensions import Api as f
 from types import SimpleNamespace
-from quicklog import tracelog
-import quicklog
-from extensions import Api as f
 
 def getDicts():
   normalDict = {"a": {"b": 123, "c":{"d": "eeee"}}}
@@ -27,11 +26,11 @@ def test_eval_distinct_attrs():
   dictCommonAttrs = set(getCommonAttrs(dicts))
   itersCommonAttrs = set(getCommonAttrs(iters))
 
-  quicklog.log(f"dictCommonAttrs::::: {dictCommonAttrs}\n\n")
-  quicklog.log(f"itersCommonAttrs::::: {itersCommonAttrs}\n\n")
+  log(f"dictCommonAttrs::::: {dictCommonAttrs}\n\n")
+  log(f"itersCommonAttrs::::: {itersCommonAttrs}\n\n")
 
   listId = itersCommonAttrs.difference(dictCommonAttrs)
   dictId = dictCommonAttrs.difference(itersCommonAttrs)
 
-  quicklog.log(f"listId::::: {listId}\n\n")
-  quicklog.log(f"dictId::::: {dictId}\n\n")
+  log(f"listId::::: {listId}\n\n")
+  log(f"dictId::::: {dictId}\n\n")

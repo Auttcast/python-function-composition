@@ -1,5 +1,6 @@
 from typing import Callable, Optional
-import inspect, quicklog
+import inspect
+from .quicklog import log
 
 enableLogging = False
 
@@ -13,7 +14,7 @@ class Composable:
 
   def __log(self, message):
     if enableLogging:
-      quicklog.log(f"DEBUG {self.__hash__()} {message}")
+      log(f"DEBUG {self.__hash__()} {message}")
 
   def __isChained(self, target) -> Optional[bool]:
     if target is None: return None
@@ -117,8 +118,3 @@ class Composable:
     if isinstance(result, tuple) and len(result) == 1:
       result = result[0]
     return result
-
-  @staticmethod
-  def reduce2():
-    pass
-

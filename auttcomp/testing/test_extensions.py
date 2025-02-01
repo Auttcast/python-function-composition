@@ -1,9 +1,10 @@
-import extensions, testBase
-from quicklog import tracelog
+from ..extensions import Api
+from .testBase import getSampleData
+from ..quicklog import tracelog
 
-f = extensions.Api
+f = Api
 
-data = testBase.getSampleData()
+data = getSampleData()
 
 @tracelog("test_at")
 def test_at():

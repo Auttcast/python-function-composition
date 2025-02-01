@@ -1,7 +1,7 @@
-import shapeEval, json, quicklog
-from shapeEval import evalShape, shapeNode
+from ..shapeEval import evalShape, shapeNode, nodeGraphToObj
+from ..quicklog import tracelog
+import json
 from types import SimpleNamespace
-from quicklog import tracelog
 
 @tracelog("test_shapeNode")
 def test_shapeNode():
@@ -9,7 +9,7 @@ def test_shapeNode():
   foo = main.addChild(shapeNode(containerType="foo"))
   foo.addChild(shapeNode(value="str"))
 
-  r = shapeEval.nodeGraphToObj(main)
+  r = nodeGraphToObj(main)
   assert r == {"foo": "str"}
 
 @tracelog("test_shapeNode2")
@@ -19,7 +19,7 @@ def test_shapeNode2():
   foo.addChild(shapeNode(value="str"))
   foo.addChild(shapeNode(value="int"))
 
-  r = shapeEval.nodeGraphToObj(main)
+  r = nodeGraphToObj(main)
   assert r == {"foo": "str|int"}
 
 @tracelog("test_evalShape_prim")

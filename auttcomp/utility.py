@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-import quicklog
+from .quicklog import log
 
 #explicite only
 iterableTypes = [set, list]
@@ -10,13 +10,13 @@ def isListType(obj):
 def normalize(obj):
   if isListType(obj): return obj
   if isinstance(obj, dict) or isinstance(obj, SimpleNamespace): return DictWrapper(obj)
-  quicklog.log(f"WARNING normalize unexpected type {type(obj)}")
+  log(f"WARNING normalize unexpected type {type(obj)}")
   return obj
 
 def normalizeForKeyExists(obj):
   if isListType(obj): return obj
   if isinstance(obj, dict) or isinstance(obj, SimpleNamespace): return KeyExistWrapper(obj)
-  quicklog.log(f"WARNING normalizeForKeyExists unexpected type {type(obj)}")
+  log(f"WARNING normalizeForKeyExists unexpected type {type(obj)}")
   return obj
 
 class BaseDictWrapper(dict):

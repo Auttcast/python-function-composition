@@ -1,9 +1,9 @@
+from .utility import normalize, normalizeForKeyExists
+from .shapeEval import evalShape, printShape
+from .composable import Composable
 from typing import Callable, Any, Tuple, Iterable, Dict, Optional
-import itertools
-from composable import Composable
-import shapeEval, functools, collections.abc
 from types import SimpleNamespace
-from utility import normalize, normalizeForKeyExists
+import functools, collections.abc, itertools
 
 f = Composable
 
@@ -190,8 +190,8 @@ Api.reduce2 = Composable(curriedReduce2)
 Api.list = Composable(list)
 Api.distinct = Composable(lambda x: list(functools.reduce(lambda a, b: a+[b] if b not in a else a, x, [])))
 Api.flatmap = Composable(curriedFlatmap)
-Api.shape = Composable(shapeEval.printShape)
-Api.shapeObj = Composable(shapeEval.evalShape)
+Api.shape = Composable(printShape)
+Api.shapeObj = Composable(evalShape)
 Api.any = Composable(curriedAny)
 Api.all = Composable(curriedAll)
 Api.reverse = Composable(reversed)
