@@ -1,7 +1,6 @@
 from types import SimpleNamespace
-from collections.abc import Mapping
 from quicklog import tracelog
-import extensions, quicklog
+import quicklog
 from extensions import Api as f
 
 def getDicts():
