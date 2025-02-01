@@ -1,4 +1,3 @@
-from types import SimpleNamespace
 from typing import Union, Self, Any
 import sys, pprint
 import quicklog
@@ -28,7 +27,6 @@ class shapeNode:
 
   def hasChildren(self): return len(self.children) > 0
 
-  #might create a set for cache
   def hasChildWithValue(self, value):
     for c in self.children:
       if c.value == value:
@@ -106,13 +104,11 @@ def nodeGraphToObj_dictKeyEval(nodes:shapeNode) -> Any :
       return "|".join(nodeCont)
 
 def nodeGraphToObj(node:shapeNode) -> Any :
-  #print(f"node type: {node.containerType} value: {node.value}")
   if node.value is not None: return node.value
   if isinstance(node.containerType, dict):
     return {c.containerType: nodeGraphToObj_dictKeyEval(c.children) for c in node.children}
   if isinstance(node.containerType, list):
     return [nodeGraphToObj(c) for c in node.children]
-    ##return list(functools.reduce(lambda x, y: x + [y] if y not in x else x, pnodes, []))
 
 
 def dictKv(obj):

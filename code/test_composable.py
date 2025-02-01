@@ -1,10 +1,5 @@
-import inspect
-
-import composable, testBase
-import quicklog
 from quicklog import tracelog, log
-
-f = composable.Composable
+from extensions import Api as f
 
 inc = f(lambda x: x+1)
 incPass = f(lambda x,y: (x+1, y+1))

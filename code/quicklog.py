@@ -1,5 +1,3 @@
-import functools
-
 enableLogging = False
 enableProdWriting = True
 

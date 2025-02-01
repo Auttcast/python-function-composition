@@ -1,12 +1,9 @@
-import inspect
-
-import extensions, quicklog, testBase, composable
+import extensions, testBase
 from quicklog import tracelog
 
-f = extensions.f
+f = extensions.Api
 
 data = testBase.getSampleData()
-#composable.enableLogging = True
 
 @tracelog("test_at")
 def test_at():
@@ -34,7 +31,7 @@ def test_filter():
 @tracelog("test_reduce")
 def test_reduce():
   s1 = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.downloads) | list
-  dataQuery = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.downloads) | f.reduce(lambda x, y: x+y, 0)
+  dataQuery = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.downloads) | f.reduce2(lambda x, y: x+y, 0)
   assert dataQuery == sum(s1)
 
 @tracelog("test_flatmap")
@@ -67,6 +64,11 @@ def test_take():
   dataQuery = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | f.take(3) | list
   assert len(dataQuery) == 3
 
+@tracelog("test_skip")
+def test_skip():
+  dataQuery = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | f.skip(3) | list
+  assert len(dataQuery) == 12
+
 @tracelog("test_sortBy")
 def test_sortBy():
   unsortedAuthors = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
@@ -86,14 +88,10 @@ def test_group():
   assert groupByAuthor == [('deepseek-ai', 12)]
 
 
-@tracelog("test_join", enable=True)
+@tracelog("test_join")
 def test_join():
 
-  #f(data) > f.at(lambda x: x.models) | f.shape
-
   groupByAuthor = f(data) > f.at(lambda x: x.models) | f.group(lambda x: x.author) | f.tee
-
-  #f(groupByAuthor) > f.tee |list| f.shape
 
   resCountByAuthor = (
       f(groupByAuthor)
@@ -104,8 +102,6 @@ def test_join():
       | list
   )
 
-  #print(f"searchResultCount: {resCountByAuthor}")
-
   def selectManyLikes(arr):
     return f(arr) > f.flatmap(lambda x: x.likes) | sum
 
@@ -114,13 +110,49 @@ def test_join():
     > f.tee
     | f.map(lambda g: (g.key, selectManyLikes(g.value)))
     | list
-    #| f.flatmap(lambda g: (g.key, g.value))
   )
-
-  #print(f"likes: {likesByAuthor}")
 
   keySelect = lambda x: x[0]
   valueSelect = lambda x: x[0][1]
   j = f(resCountByAuthor) > f.innerJoin(likesByAuthor, keySelect, keySelect, valueSelect, valueSelect) | list
 
   assert j == [('deepseek-ai', (14027, 12)), ('bytedance-research', (221, 2)), ('Qwen', (596, 4))]
+
+@tracelog("test_hackery", enable=True)
+def xtest_hackery():
+
+  class Foo():
+    def __init__(self, tracking=[]):
+      self.tracking = tracking
+
+    def __getattr__(self, name):
+      return Foo(self.tracking + [name])
+
+
+  func = lambda x: x.models.authorData.name
+  condition = lambda x: x.models.authorData.downloads > 1000
+  # {} [] {} prop
+  # get map get get
+  # flatmap for each [] in path
+  #consider yield
+  # where x.models.authorData.downloads > 10000
+  #graph monad / chain
+  # graph(query) -> monad; filter, etc; -> project
+  # conditional api:
+  # - must separate path from evaluation
+  # - .graphWhere(lambda x.models.authorData.downloads, lambda x: x >
+  #
+  # r = condition(Foo())
+  # print(r.tracking)
+
+  #def graph(obj, level):
+  #  if extensions.isDict(obj):
+      #if doesn't have proper (which could be nested) just ignore
+  #    prop = getattr(obj, level)
+      #print(f"{has}, {level}")
+
+  #def eval(track):
+  #  for level in track:
+  #     graph(data, level)
+  #
+  # eval(r.tracking)

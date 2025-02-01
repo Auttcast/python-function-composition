@@ -114,8 +114,11 @@ class Composable:
     data = other.f
     nextFunc = self
     result = nextFunc(data)
-    #self.__log(f"::::TUPLE DATA: {result}")
-    #self.__log(f"::::TUPLE: {isinstance(result, tuple)} LEN {len(result)}")
     if isinstance(result, tuple) and len(result) == 1:
       result = result[0]
     return result
+
+  @staticmethod
+  def reduce2():
+    pass
+
