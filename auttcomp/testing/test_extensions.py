@@ -120,7 +120,7 @@ def test_join():
   assert j == [('deepseek-ai', (14027, 12)), ('bytedance-research', (221, 2)), ('Qwen', (596, 4))]
 
 @tracelog("test_hackery", enable=True)
-def xtest_hackery():
+def test_hackery():
 
   class Foo():
     def __init__(self, tracking=[]):
@@ -129,13 +129,15 @@ def xtest_hackery():
     def __getattr__(self, name):
       return Foo(self.tracking + [name])
 
+    def __getitem__(self, index):
+      return {}
 
-  func = lambda x: x.models.authorData.name
+  func = lambda x: x.models[0].authorData.name
   condition = lambda x: x.models.authorData.downloads > 1000
+
   # {} [] {} prop
   # get map get get
   # flatmap for each [] in path
-  #consider yield
   # where x.models.authorData.downloads > 10000
   #graph monad / chain
   # graph(query) -> monad; filter, etc; -> project
@@ -143,17 +145,5 @@ def xtest_hackery():
   # - must separate path from evaluation
   # - .graphWhere(lambda x.models.authorData.downloads, lambda x: x >
   #
-  # r = condition(Foo())
-  # print(r.tracking)
-
-  #def graph(obj, level):
-  #  if extensions.isDict(obj):
-      #if doesn't have proper (which could be nested) just ignore
-  #    prop = getattr(obj, level)
-      #print(f"{has}, {level}")
-
-  #def eval(track):
-  #  for level in track:
-  #     graph(data, level)
-  #
-  # eval(r.tracking)
+  r = func(Foo())
+  print(r.tracking)
