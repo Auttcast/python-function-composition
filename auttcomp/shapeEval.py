@@ -1,5 +1,6 @@
 from typing import Union, Self, Any
 import sys, pprint
+from .utility import unwrapFromSingleTuple
 
 class shapeNode:
   def __init__(self, containerType: Union[list|dict|str|tuple|None]=None, value:str=None, parent=None):
@@ -153,6 +154,7 @@ def objectCrawler(obj, nodeWriter):
 def evalShape(obj, setAnyType=False):
   w = nodeWriter()
   objectCrawler(obj, w)
+
   return nodeGraphToObj(w.h, setAnyType)
 
 def printShape(obj, setAnyType=False):

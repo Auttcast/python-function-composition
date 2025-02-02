@@ -1,13 +1,40 @@
 from collections.abc import Callable
-from .quicklog import *
-from .shapeEval import evalShape
+from types import SimpleNamespace
 
-class Ghost():
-  def __init__(self, tracking=[]):
-    self.tracking = tracking
+from .shapeEval import evalShape
+from .quicklog import log
+
+
+
+
+
+class Ghost(object):
+  def __init__(self, tracking=None):
+    super().__init__()
+
+    if tracking is None:
+      self.tracking = OwnedList(self)
+    else:
+      self.tracking = tracking
+
+  def logPropAccess(self, message):
+    if True:
+      log(message)
+  #
+  # def __getattribute__(self, item):
+  #   print(f"__getattribute__ {item}")
+  #   #log(f"__getattr__ {self.tracking} {item}")
+  #   log(f"__getattribute__ {self == self} {item}")
+  #   #self.tracking.append(item)
+  #   return self.tracking
 
   def __getattr__(self, name):
     return Ghost(self.tracking + [name])
+
+  def __setattr__(self, key, value):
+    print(f"SET:::::: {key} value: {value} inst: {type(value)}")
+    if isinstance(value, Ghost): return
+    super().__setattr__(key, value)
 
   @staticmethod
   def __getRootContainer(obj, parent=None):
@@ -22,43 +49,46 @@ class Ghost():
       return evalShape(obj, setAnyType=True)
 
   def __getitem__(self, index):
-    #targetType = self.__getRootContainer()
+    if index == self: return self
+    self.logPropAccess(f"__gt__ {self.tracking} {index}")
+    shape = Ghost.__prepareAndEval(index)
+    print(f"SHAPE:::: {shape}")
 
-    log(f"!!!!!!!!index.tracking: len:{Ghost.__prepareAndEval(index)}")
-    if isinstance(index, Ghost):
-      # [x.foo == "bar"]
-      log(f"expression {index.tracking}")
+    if isinstance(index, Ghost): # [x.foo == "bar"]
+      shapes = [
+        ['Any', ('Any',)],
+        ({'tracking': ['Any', ('Any',)]},)
+      ]
 
       self.tracking.append([index[x].tracking[0] for x in range(0, len(index))])
-
-    elif isinstance(index, Callable):
-      # [lambda x.foo == "bar"]
-      log(f"lambda {index.tracking}")
-
+    elif isinstance(index, Callable): # [lambda x.foo == "bar"]
       self.tracking.append(index(Ghost()).tracking)
 
-    else:
-      # [x.foo] 1 tuple???
-      # [x.foo, x.bar, x.baz]
-      log(f"tuple {index}")
+    else: # [x.foo, x.bar, x.baz]
+      shapes = [
+        ({'tracking': ['Any']},)
+      ]
 
       self.tracking.append([index[x].tracking[0] for x in range(0, len(index))])
-
     return self
 
   def __gt__(self, other):
+    self.logPropAccess(f"__gt__ {self.tracking} {other}")
     self.tracking.append(('>', other))
     return self
 
   def __lt__(self, other):
+    self.logPropAccess(f"__lt__ {self.tracking} {other}")
     self.tracking.append(('<', other))
     return self
 
   def __eq__(self, other):
+    self.logPropAccess(f"__eq__ {self.tracking} {other}")
     self.tracking.append(('==', other))
     return self
 
   def __and__(self, other):
+    self.logPropAccess(f"__and__ {self.tracking} {other}")
     self.tracking.append(('and', other(self.tracking)))
     #join?
     return self
@@ -70,6 +100,7 @@ class Ghost():
     return self.tracking
 
   def __or__(self, other):
+    self.logPropAccess(f"__or__ {self.tracking} {other}")
     self.tracking.append(('or', other))
     #composition or filtering
     return self
@@ -78,5 +109,6 @@ class Ghost():
     raise Exception("invalid operation - requires bool return")
 
   def __add__(self, other):
+    self.logPropAccess(f"__add__ {self.tracking} {other}")
     self.tracking.append(('add', other(self.tracking)))
     return self

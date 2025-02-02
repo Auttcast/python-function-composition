@@ -30,8 +30,8 @@ def test_query_builder1():
     complexParam = Ghost()
     #['author', ('==', 'allen watts')]
     func2 = lambda x: (x.
-                      models[x.left == "allen watts left", x.right == "allen watts right"] #where
-                      .authorData[x.fullname, x.type, x.followerCount] #select
+                      models[x.left == "allen watts left"] #where
+                      .authorData[x.fullname, x.fullname] #select
                       )
     r = func2(complexParam)
     print(r.tracking)

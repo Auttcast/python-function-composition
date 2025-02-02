@@ -43,3 +43,8 @@ class KeyExistWrapper(BaseDictWrapper):
 
   def __getattr__(self, name):
     return name in super().getKeys()
+
+def unwrapFromSingleTuple(obj):
+  if isinstance(obj, tuple) and len(obj) == 1:
+    return obj[0]
+  return obj
