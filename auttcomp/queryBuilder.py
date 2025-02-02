@@ -6,6 +6,33 @@ from .quicklog import log
 
 
 
+class OwnedList(list):
+  def __init__(self, owner):
+    super().__init__()
+    self.tracking = []
+
+  def __setitem__(self, key, value):
+    if isinstance(value, Ghost): return
+    self.tracking.append(value)
+
+  def __iadd__(self, other):
+    if isinstance(other, Ghost): return
+    self.tracking.append(other)
+
+  def __radd__(self, other):
+    if isinstance(other, Ghost): return
+    self.tracking.append(other)
+
+  def append(self, value):
+    if isinstance(value, Ghost): return
+    self.tracking.append(value)
+
+  def insert(self, idx, value):
+    if isinstance(value, Ghost): return
+    self.tracking.insert(idx, value)
+
+
+
 
 
 class Ghost(object):
@@ -20,13 +47,6 @@ class Ghost(object):
   def logPropAccess(self, message):
     if True:
       log(message)
-  #
-  # def __getattribute__(self, item):
-  #   print(f"__getattribute__ {item}")
-  #   #log(f"__getattr__ {self.tracking} {item}")
-  #   log(f"__getattribute__ {self == self} {item}")
-  #   #self.tracking.append(item)
-  #   return self.tracking
 
   def __getattr__(self, name):
     return Ghost(self.tracking + [name])
@@ -73,24 +93,19 @@ class Ghost(object):
     return self
 
   def __gt__(self, other):
-    self.logPropAccess(f"__gt__ {self.tracking} {other}")
     self.tracking.append(('>', other))
     return self
 
   def __lt__(self, other):
-    self.logPropAccess(f"__lt__ {self.tracking} {other}")
     self.tracking.append(('<', other))
     return self
 
   def __eq__(self, other):
-    self.logPropAccess(f"__eq__ {self.tracking} {other}")
     self.tracking.append(('==', other))
     return self
 
   def __and__(self, other):
-    self.logPropAccess(f"__and__ {self.tracking} {other}")
     self.tracking.append(('and', other(self.tracking)))
-    #join?
     return self
 
   def __bool__(self):
@@ -100,15 +115,12 @@ class Ghost(object):
     return self.tracking
 
   def __or__(self, other):
-    self.logPropAccess(f"__or__ {self.tracking} {other}")
     self.tracking.append(('or', other))
-    #composition or filtering
     return self
 
   def __contains__(self, item):
     raise Exception("invalid operation - requires bool return")
 
   def __add__(self, other):
-    self.logPropAccess(f"__add__ {self.tracking} {other}")
     self.tracking.append(('add', other(self.tracking)))
     return self
