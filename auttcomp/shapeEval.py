@@ -2,8 +2,8 @@ from typing import Union, Self, Any
 import sys, pprint
 
 class shapeNode:
-  def __init__(self, containerType: Union[list|dict|str|None]=None, value:str=None, parent=None):
-    self.containerType : Union[list|dict|str|None] = containerType
+  def __init__(self, containerType: Union[list|dict|str|tuple|None]=None, value:str=None, parent=None):
+    self.containerType : Union[list|dict|str|tuple|None] = containerType
     self.value : str = value
     self.parent:shapeNode = parent
     self.children:[shapeNode] = []
@@ -19,12 +19,6 @@ class shapeNode:
       if c.containerType == rawType:
         outParam.append(c)
         return True
-
-  def isDictKey(self): isinstance(self.containerType, str)
-  def isDictionary(self): isinstance(self.containerType, dict)
-  def isList(self): isinstance(self.containerType, list)
-
-  def hasChildren(self): return len(self.children) > 0
 
   def hasChildWithValue(self, value):
     for c in self.children:
@@ -56,6 +50,7 @@ class nodeWriter():
 
   def pushList(self): self.pushContainer([])
   def pushDict(self): self.pushContainer({})
+  def pushTuple(self): self.pushContainer((1,))
   def pushDictKey(self, key): self.pushContainer(key)
 
   def writeName(self, value):
@@ -75,8 +70,8 @@ def getPathToNodeRecurse(node):
 def getPathToNode(node):
   return "->".join(list(reversed(getPathToNodeRecurse(node))))
 
-def nodeGraphToObj_dictKeyEval(nodes:shapeNode) -> Any :
-  if len(nodes) == 1: return nodeGraphToObj(nodes[0])
+def nodeGraphToObj_dictKeyEval(nodes:shapeNode, setAnyType=False) -> Any :
+  if len(nodes) == 1: return nodeGraphToObj(nodes[0], setAnyType)
   else:
     notNone = lambda x: x is not None
     nodeValues = list(map(lambda x: x.value, nodes))
@@ -102,12 +97,19 @@ def nodeGraphToObj_dictKeyEval(nodes:shapeNode) -> Any :
       sys.stderr.writelines(f"ERROR: {path} dictionary key {key} contains both array and dictionary accessors: {strRep}")
       return "|".join(nodeCont)
 
-def nodeGraphToObj(node:shapeNode) -> Any :
-  if node.value is not None: return node.value
+#NOTE: recurse with nodeGraphToObj_dictKeyEval
+def nodeGraphToObj(node:shapeNode, setAnyType=False) -> Any :
+  if node.value is not None:
+    if setAnyType:
+      return 'Any'
+    else:
+      return node.value
   if isinstance(node.containerType, dict):
-    return {c.containerType: nodeGraphToObj_dictKeyEval(c.children) for c in node.children}
+    return {c.containerType: nodeGraphToObj_dictKeyEval(c.children, setAnyType) for c in node.children}
   if isinstance(node.containerType, list):
-    return [nodeGraphToObj(c) for c in node.children]
+    return [nodeGraphToObj(c, setAnyType) for c in node.children]
+  if isinstance(node.containerType, tuple):
+    return tuple([nodeGraphToObj(c, setAnyType) for c in node.children])
 
 
 def dictKv(obj):
@@ -140,13 +142,18 @@ def objectCrawler(obj, nodeWriter):
       objectCrawler(value, nodeWriter)
       nodeWriter.apop()
     nodeWriter.apop()
+  elif isinstance(obj, tuple):
+    nodeWriter.pushTuple()
+    for item in obj:
+      objectCrawler(item, nodeWriter)
+    nodeWriter.apop()
   else:
     nodeWriter.writeName(obj)
 
-def evalShape(obj):
+def evalShape(obj, setAnyType=False):
   w = nodeWriter()
   objectCrawler(obj, w)
-  return nodeGraphToObj(w.h)
+  return nodeGraphToObj(w.h, setAnyType)
 
-def printShape(obj):
-  pprint.pprint(evalShape(obj), indent=2)
+def printShape(obj, setAnyType=False):
+  pprint.pprint(evalShape(obj, setAnyType), indent=2)

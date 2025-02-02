@@ -108,4 +108,14 @@ def test_evalShape_dict3():
   s = evalShape(jsonObj)
   assert s == {"l1": {"l2p1": ['int'], "l2p2": ["str"]}}
 
+@tracelog("test_evalShape_dict3")
+def test_evalShape_dict4():
+  obj = {
+      "l2p1": [("foo", (1))],
+      "l2p2": ("x", 123)
+    }
+
+  s = evalShape(obj)
+  assert s == {"l2p1": [("str", ('int'))], "l2p2": ("str", 'int')}
+
 

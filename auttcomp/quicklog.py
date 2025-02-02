@@ -4,10 +4,12 @@ enableProdWriting = True
 prefix = ""
 
 def log(message, override=None):
+  message = str(message)
   if enableLogging or override == True:
     print(prefix + message)
 
 def tracelog(message, enable=False):
+  message = str(message)
   def funcWrap(func):
     def loggingWrapper(*args, **kargs):
       global prefix
