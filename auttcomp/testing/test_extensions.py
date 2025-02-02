@@ -130,10 +130,87 @@ def test_hackery():
       return Foo(self.tracking + [name])
 
     def __getitem__(self, index):
-      return {}
 
-  func = lambda x: x.models[0].authorData.name
-  condition = lambda x: x.models.authorData.downloads > 1000
+      #select format (index is param tracker)
+      print(f"index: {index[0].tracking[0], index[1].tracking[0], index[2].tracking[0]}")
+
+      #where format (index is selector func
+      #self.tracking.append(index(Foo()).tracking)
+      return self
+
+    def __gt__(self, other):
+      self.tracking.append(('>', other))
+      return self
+
+    def __lt__(self, other):
+      self.tracking.append(('<', other))
+      return self
+
+    def __eq__(self, other):
+      self.tracking.append(('==', other))
+      return self
+
+    def __and__(self, other):
+      self.tracking.append(('and', other(self.tracking)))
+      #join?
+      return self
+
+    def __bool__(self):
+      raise Exception("invalid operation - not allowed to return anything other than bool")
+
+    def __call__(self, *args, **kwargs):
+      return self.tracking
+
+    def __or__(self, other):
+      self.tracking.append(('or', other))
+      #composition or filtering
+      return self
+
+    def __contains__(self, item):
+      raise Exception("invalid operation - requires bool return")
+
+    def __add__(self, other):
+      self.tracking.append(('add', other(self.tracking)))
+      return self
+
+
+
+  #tabular data
+
+  def tabulartype():
+    xParam = Foo()
+
+    func = lambda x: x[x.id, x.name, x.age]
+
+    r = func(xParam)
+    print(r.tracking)
+
+  tabulartype()
+
+
+
+
+
+
+  def complexType():
+    xParam = Foo()
+
+    func = lambda x: (x.
+                      models[lambda x2: x2.author == "allen watts"] #where
+                      .authorData[x.fullname, x.type, x.followerCount] #select
+                      )
+
+    r = func(xParam)
+    print(r.tracking)
+
+  # s = slice(0, 3, -2)
+
+  #using index accessor to filter
+  #func = lambda x: x.models[where(lambda x: x.author == "allen watts")].authorData.followerCount
+  #note slice is sealed
+
+  #func = lambda x: x.models[where(lambda x: x.author == "allen watts")].authorData[select([id, avatar, name])]
+
 
   # {} [] {} prop
   # get map get get
@@ -145,5 +222,8 @@ def test_hackery():
   # - must separate path from evaluation
   # - .graphWhere(lambda x.models.authorData.downloads, lambda x: x >
   #
-  r = func(Foo())
-  print(r.tracking)
+
+  #
+  # r = func(Foo())
+  # print(r.tracking)
+  #print(r.tracking[5][1])
