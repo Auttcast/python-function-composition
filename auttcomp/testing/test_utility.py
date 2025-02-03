@@ -34,3 +34,19 @@ def test_eval_distinct_attrs():
 
   log(f"listId::::: {listId}\n\n")
   log(f"dictId::::: {dictId}\n\n")
+
+@tracelog("test_frame")
+def test_frame():
+  import sys
+
+  currentFrame = sys._getframe()
+
+  def baz(x):
+    return sys._getframe()
+
+  def bar(a, b):
+    return baz(a+b)
+
+  def foo(a, b, c):
+    return bar(a+b, c)
+
