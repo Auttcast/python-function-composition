@@ -127,3 +127,9 @@ def test_distinctSet():
   slowDistinct = data > f.distinct
   fastDistinct = data > f.distinctSet
   assert slowDistinct == fastDistinct
+
+
+@tracelog("test_property_as_expression", enable=True)
+def xtest_property_as_expression():
+  r = f(data) > f.select(lambda x: x.models.authorData.fullName) | list
+  assert r != None

@@ -12,6 +12,11 @@ def at(func):
       return func(normalize(obj))
   return f(atPart)
 
+def curriedSelect(func):
+  def partialSelect(obj):
+    return func(normalize(obj))
+  return f(partialSelect)
+
 def curriedMap(func):
   def partialMap(data):
     return map(lambda x: func(normalize(x)), data)

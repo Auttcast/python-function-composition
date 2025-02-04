@@ -1,5 +1,11 @@
 from ..queryBuilder import *
-from ..quicklog import *
+
+from ..extensions import Api
+from .testBase import getHuggingFaceSample
+from ..quicklog import tracelog
+f = Api
+
+data = getHuggingFaceSample()
 
 '''
 identity:   lambda x: x -> []
