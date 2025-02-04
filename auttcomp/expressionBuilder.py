@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from .quicklog import log
 from typing import Iterable
 
@@ -22,7 +24,12 @@ class ExpressionExecutor:
     if len(tracking) == 0: return obj
     prop = tracking.pop()
     if isinstance(obj, list):
-      pass
+      return ExpressionExecutor.recursiveEval(tracking, list(map(lambda x: getattr(x, prop), obj)))
+    if isinstance(obj, dict):
+      return ExpressionExecutor.recursiveEval(tracking, obj[prop])
+    if isinstance(obj, SimpleNamespace):
+      return ExpressionExecutor.recursiveEval(tracking, getattr(obj, prop))
+    raise Exception(f"unexpected flow {type(obj)}")
 
   def __call__(self, data):
     g = Ghost()
