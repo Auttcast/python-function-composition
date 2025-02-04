@@ -4,6 +4,8 @@ from .composable import Composable
 from typing import Callable, Any, Tuple, Iterable, Dict, Optional, Union, TypeVar
 from types import SimpleNamespace
 import functools, collections.abc, itertools
+from .expressionBuilder import ExpressionExecutor
+from .quicklog import log
 
 f = Composable
 
@@ -13,8 +15,9 @@ def at(func):
   return f(atPart)
 
 def curriedSelect(func):
+  exp = ExpressionExecutor(func)
   def partialSelect(obj):
-    return func(normalize(obj))
+    return exp(normalize(obj))
   return f(partialSelect)
 
 def curriedMap(func):
@@ -137,6 +140,12 @@ class Api:
   #def at(func:PropertySelector) -> Callable[[T], R]:
   def at(func):
     '''property selector'''
+    pass
+
+  @staticmethod
+  #def select(func:PropertySelector) -> Callable[[T], R]:
+  def select(func):
+    '''like map with chainable property selection'''
     pass
 
   @staticmethod
@@ -286,6 +295,7 @@ class Api:
 
 Api = f
 Api.at = Composable(at)
+Api.select = Composable(curriedSelect)
 Api.map = Composable(curriedMap)
 Api.foreach = Composable(curriedForeach)
 Api.filter = Composable(curriedFilter)

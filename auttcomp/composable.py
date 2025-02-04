@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Iterable
 import inspect
 from .quicklog import log
 
@@ -24,6 +24,7 @@ class Composable:
   def __invokeNative(self, func, name, args):
     self.__log(f"START FUNCTION ----------------- {args} isData: {self.__isData}")
     if self.__isData: return (self.f,)
+    log(f"func: {func}")
     r = func(*args)
     if type(r) not in [type((1,)), type(None)]: r = (r,)
     self.__log(f"END FUNCTION   ----------------- {args} ->  isData: {self.__isData} r: {r}")

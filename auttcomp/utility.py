@@ -1,16 +1,19 @@
 import sys
 from types import SimpleNamespace
-from .quicklog import log
+from typing import Iterable
+from .quicklog import log, ConsoleColor
 
 #explicite only
 iterableTypes = [set, list]
 
 def isListType(obj):
+  if not isinstance(obj, Iterable): return False
   return any(list(map(lambda x: isinstance(obj, x), iterableTypes)))
 
 def normalize(obj):
   if isListType(obj): return obj
-  if isinstance(obj, dict) or isinstance(obj, SimpleNamespace): return DictWrapper(obj)
+  if isinstance(obj, SimpleNamespace): return obj
+  if isinstance(obj, dict): return SimpleNamespace(**obj)
   log(f"WARNING normalize unexpected type {type(obj)}")
   return obj
 
@@ -33,9 +36,12 @@ class DictWrapper(BaseDictWrapper):
     super().__init__(d)
 
   def __getattr__(self, name):
-    if name in super().getKeys():
-      return self.d[name]
-    return None
+    if isinstance(self.d, dict):
+      if name in super().getKeys():
+        return self.d[name]
+      return None
+    elif isinstance(self.d, SimpleNamespace):
+      return getattr(self.d, name)
 
 class KeyExistWrapper(BaseDictWrapper):
 
@@ -64,18 +70,6 @@ def traceFrame(func):
     finally:
       sys.settrace(disable)
   return traceFrameWrapper
-
-class ConsoleColor:
-  HEADER = '\033[95m'
-  BLUE = '\033[94m'
-  CYAN = '\033[96m'
-  GREEN = '\033[92m'
-  WARNING = '\033[93m'
-  FAIL = '\033[91m'
-  BOLD = '\033[1m'
-  UNDERLINE = '\033[4m'
-  END = '\033[0m'
-
 
 class ObjUtil():
 
