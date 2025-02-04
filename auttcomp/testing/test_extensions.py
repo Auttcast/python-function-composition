@@ -121,6 +121,6 @@ def test_join():
 
   assert j == [('deepseek-ai', (14027, 12)), ('bytedance-research', (221, 2)), ('Qwen', (596, 4))]
 
-@tracelog("test_join")
+@tracelog("test_shape")
 def test_shape():
   pass
