@@ -236,5 +236,5 @@ class TupleShape(str, BaseShape):
 def evalShape(obj, setAnyType=False):
   w = nodeWriter()
   objectCrawler(obj, w)
-  obj = nodeGraphToObj(w.h, setAnyType)
-  return BaseShape.Factory(obj)
+  res = nodeGraphToObj(w.h, setAnyType)
+  return BaseShape.Factory(res)

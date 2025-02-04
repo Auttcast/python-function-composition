@@ -120,3 +120,10 @@ def test_join():
   j = f(resCountByAuthor) > f.innerJoin(likesByAuthor, keySelect, keySelect, valueSelect, valueSelect) | list
 
   assert j == [('deepseek-ai', (14027, 12)), ('bytedance-research', (221, 2)), ('Qwen', (596, 4))]
+
+@tracelog("test_distinctSet")
+def test_distinctSet():
+  data = f([1, 2, 3, 3, 3, 3])
+  slowDistinct = data > f.distinct
+  fastDistinct = data > f.distinctSet
+  assert slowDistinct == fastDistinct
