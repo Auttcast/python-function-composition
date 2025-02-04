@@ -64,13 +64,16 @@ def test_sort():
 
 @tracelog("test_take")
 def test_take():
-  dataQuery = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | f.take(3) | list
-  assert len(dataQuery) == 3
+  dist = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | list
+  dataQuery = f(dist) > f.take(3) | list
+  assert dataQuery == (f(dist) > f.list)[0:3]
 
 @tracelog("test_skip")
 def test_skip():
-  dataQuery = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | f.skip(3) | list
-  assert len(dataQuery) == 12
+  dist = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | list
+  dataQuery = f(dist) > f.skip(3) | list
+  assert len(dataQuery) == len(dist[3:])
+  assert dataQuery == dist[3:]
 
 @tracelog("test_sortBy")
 def test_sortBy():
