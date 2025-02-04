@@ -19,25 +19,24 @@ models().
 
 '''
 
-isLogging = False
+isLogging = True
 
 ###SELECTION
 
-@tracelog("test_query_builder_identity", enable=isLogging)
+@tracelog("test_query_builder_identity")
 def test_query_builder_identity():
   r = select(lambda x: x)
   assert r == []
 
-@tracelog("test_query_builder_property", enable=isLogging)
-def test_query_builder_property():
+@tracelog("test_query_builder_property")
+def test_query_builder_select():
   r = select(lambda x: x.model.FOO.bar)
   assert r == [['model'], ['FOO'], ['bar']]
 
 @tracelog("test_query_builder_property_arr", enable=isLogging)
-def xtest_query_builder_property_arr():
-  r = select(lambda x: x.model[x.FOO.bar])
-  print(r)
-  assert r == [['model', [['FOO'], ['bar']]]]
+def xtest_query_builder_where():
+  r = where(lambda x: x.models.authorData.fullName == "some name")
+  assert r == [['models'], ['authorData'], ['fullName']]
 
 
 

@@ -1,7 +1,7 @@
 from .utility import normalize, normalizeForKeyExists
 from .shapeEval import evalShape, DictShape, ListShape, TupleShape, StrShape
 from .composable import Composable
-from typing import Callable, Any, Tuple, Iterable, Dict, Optional, Union
+from typing import Callable, Any, Tuple, Iterable, Dict, Optional, Union, TypeVar
 from types import SimpleNamespace
 import functools, collections.abc, itertools
 
@@ -111,119 +111,130 @@ def tee(generator):
   _, g = itertools.tee(iter(generator))
   return g
 
+
+type T = TypeVar('T')
+type T2 = TypeVar('T2')
+type R = TypeVar('R')
+type L = TypeVar('L')
+type K = TypeVar('K')
+
+type PropertySelector = Callable[[T], R]
+type KeySelector = Callable[[T], K]
+
 class Api:
 
   @staticmethod
-  def at(func:Callable[[Any], Any]) -> Callable[[Any], Any]:
+  def at(func:PropertySelector) -> Callable[[T], R]:
     '''property selector'''
     pass
 
   @staticmethod
-  def map(func:Callable[[Any], Iterable[Any]]) -> Callable[[Any], Iterable[Any]]:
+  def map(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
     '''curried version of python's map:
     map(func, *iterables) --> map object\n\nMake an iterator that computes the function using arguments from\neach of the iterables.  Stops when the shortest iterable is exhausted.
     '''
     pass
 
   @staticmethod
-  def foreach(func:Callable[[Any], Iterable[Any]]) -> Callable[[Any], Any]: pass
+  def foreach(func:PropertySelector) -> Callable[[Iterable[T]], Any]: pass
 
   @staticmethod
-  def filter(func:Callable[[Any], Iterable[Any]]) -> Callable[[Any], Iterable[Any]]:
+  def filter(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
     '''curried version of python's filter
     filter(function or None, iterable) --> filter object\n\nReturn an iterator yielding those items of iterable for which function(item)\nis true. If function is None, return the items that are true.
     '''
     pass
 
   @staticmethod
-  def reduce(func:Callable[[Any, Any], Any]) -> Callable[[Any], Any]:
+  def reduce(func:Callable[[T, T], R]) -> Callable[[T], R]:
     '''curried version of functools's reduce (to use initial value, use reduce2)
     reduce(function, iterable) -> value\n\nApply a function of two arguments cumulatively to the items of an iterable, from left to right.\n\nThis effectively reduces the iterable to a single value.  If initial is present,\nit is placed before the items of the iterable in the calculation, and serves as\na default when the iterable is empty.\n\nFor example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5])\ncalculates ((((1 + 2) + 3) + 4) + 5).
     '''
     pass
 
   @staticmethod
-  def reduce2(func:Callable[[Any, Any, Any], Any]) -> Callable[[Any], Any]:
+  def reduce2(func:Callable[[T, T, R], R]) -> Callable[[T], R]:
     '''curried version of functools's reduce
     reduce(function, iterable, initial) -> value\n\nApply a function of two arguments cumulatively to the items of an iterable, from left to right.\n\nThis effectively reduces the iterable to a single value.  If initial is present,\nit is placed before the items of the iterable in the calculation, and serves as\na default when the iterable is empty.\n\nFor example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5])\ncalculates ((((1 + 2) + 3) + 4) + 5).
     '''
     pass
 
   @staticmethod
-  def list(func: Iterable[Any]) -> list[Any]:
+  def list(func: Iterable[T]) -> list[R]:
     '''curried version of python's list
     Built-in mutable sequence.\n\nIf no argument is given, the constructor creates a new empty list.\nThe argument must be an iterable if specified.
     '''
     pass
 
   @staticmethod
-  def distinct(func:Callable[[Any], Iterable[Any]]) -> Callable[[Any], Iterable[Any]]:
+  def distinct(func:Callable[[T], Iterable[R]]) -> Callable[[T], Iterable[R]]:
     '''a general purpose distinct implementation where performance is not required
     if your data is compatible, you may be able to use distinctSet
     '''
     pass
 
   @staticmethod
-  def distinctSet(func:Callable[[Any], Iterable[Any]]) -> Callable[[Any], Iterable[Any]]:
+  def distinctSet(func:Callable[[T], Iterable[R]]) -> Callable[[T], Iterable[R]]:
     '''implementation of distinct using python's set, but limited to qualifying primitive types'''
     pass
 
   @staticmethod
-  def flatmap(func:Callable[[Any], Iterable[Iterable[Any]]]) -> Callable[[Any], Iterable[Any]]:
+  def flatmap(func:Callable[[T], Iterable[Iterable[R]]]) -> Callable[[T], Iterable[R]]:
     '''iterable implementation of flatmap using python's native map'''
     pass
 
   @staticmethod
-  def shape(obj:Any) -> Union[DictShape|ListShape|TupleShape|StrShape]:
+  def shape(obj:T) -> Union[DictShape|ListShape|TupleShape|StrShape]:
     '''evaluates the shape of data, returns a shape object, pprints thru __repr__'''
     pass
 
   @staticmethod
-  def any(func:Callable[[Any], Iterable[Any]]) -> bool: pass
+  def any(func:Callable[[T], bool]) -> Callable[[Iterable[T]], bool]: pass
 
   @staticmethod
-  def all(func:Callable[[Any], Iterable[Any]]) -> bool: pass
+  def all(func:Callable[[T], bool]) -> Callable[[Iterable[T]], bool]: pass
 
   @staticmethod
-  def reverse(func:Callable[[Any], Iterable[Any]]) -> Callable[[Any], Iterable[Any]]:
+  def reverse(data:Iterable[T]) -> Iterable[R]:
     '''curried version of python's reverse'''
     pass
 
   @staticmethod
-  def sort(func:Callable[[Any], Iterable[Any]]) -> Callable[[Any], Iterable[Any]]:
+  def sort(data:Iterable[T]) -> Iterable[R]:
     '''curried version of python's sort'''
     pass
 
   @staticmethod
-  def sortBy(func:Callable[[Any], Iterable[Any]]) -> Callable[[Any], Iterable[Any]]:
+  def sortBy(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
     '''curried version of python's sort with key selector'''
     pass
 
   @staticmethod
-  def sortByDescending(func:Callable[[Any], Iterable[Any]]) -> Callable[[Any], Iterable[Any]]:
+  def sortByDescending(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
     '''curried version of python's sort w/ key selector followed by reverse'''
     pass
 
   @staticmethod
-  def take(count:int) -> Callable[[Any], Iterable[Any]]:
+  def take(count:int) -> Callable[[Iterable[T]], Iterable[R]]:
     '''basically list[0:count]'''
     pass
 
   @staticmethod
-  def skip(count:int) -> Callable[[Any], Any]:
+  def skip(count:int) -> Callable[[Iterable[T]], Iterable[R]]:
     '''basically list[count:]'''
     pass
 
   @staticmethod
-  def group(func:Callable[[Any], Any]) -> Callable[[Any], Iterable[Dict[Any, Iterable[Any]]]]:
+  def group(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[Dict[T, Iterable[R]]]]:
     '''curried version of itertools.groupby
+    sort by key is used before grouping to achieve singular grouping
     f.groupby(lambda x.property)
     this implementation runs the iterable for the grouping, but yields the key/value pair as a new iterable
     '''
     pass
 
   @staticmethod
-  def innerJoin(leftData:Any, leftKeySelector:Callable[[Any], Any], rightKeySelector:Callable[[Any], Any], leftDataSelector:Callable[[Any], Any], rightDataSelector:Callable[[Any], Any]) -> Callable[[Any], Iterable[Tuple[Any, Any]]]:
+  def innerJoin(leftData:T, leftKeySelector:KeySelector, rightKeySelector:KeySelector, leftDataSelector:PropertySelector, rightDataSelector:PropertySelector) -> Callable[[T2], Iterable[Tuple[K, Tuple[T, T2]]]]:
     '''combine two groups by key
     f.innerJoin(leftData, leftKeySelector, rightKeySelector, leftDataSelector, rightDataSelector)
     returns a tuple of (key, (leftData, rightData))
