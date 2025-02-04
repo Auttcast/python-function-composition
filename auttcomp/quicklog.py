@@ -6,7 +6,7 @@ prefix = ""
 def log(message, override=None):
   message = str(message)
   if enableLogging or override == True:
-    print(prefix + message)
+    print(f"{prefix}{message}")
 
 def tracelog(message, enable=False):
   message = str(message)

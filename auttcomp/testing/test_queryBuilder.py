@@ -12,7 +12,7 @@ func2 = lambda x: (x.
                       .authorData[x.fullname1,x.fullname2, x.fullname3] #select
                       )
 
-
+models().
 
 
 
@@ -25,20 +25,17 @@ isLogging = False
 
 @tracelog("test_query_builder_identity", enable=isLogging)
 def test_query_builder_identity():
-  func = lambda x: x
-  r = select(func)
+  r = select(lambda x: x)
   assert r == []
 
 @tracelog("test_query_builder_property", enable=isLogging)
 def test_query_builder_property():
-  func = lambda x: x.model.FOO.bar
-  r = select(func)
+  r = select(lambda x: x.model.FOO.bar)
   assert r == [['model'], ['FOO'], ['bar']]
 
 @tracelog("test_query_builder_property_arr", enable=isLogging)
 def xtest_query_builder_property_arr():
-  func = lambda x: x.model[x.FOO.bar]
-  r = select(func)
+  r = select(lambda x: x.model[x.FOO.bar])
   print(r)
   assert r == [['model', [['FOO'], ['bar']]]]
 

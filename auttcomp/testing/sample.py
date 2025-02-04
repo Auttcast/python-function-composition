@@ -1,5 +1,13 @@
+#tabular
+#complex
+#time series
 
-sampleData = '''
+
+sampleData = [
+  {}
+]
+
+sampleData_huggingFace = '''
 {
 	"activeFilters": {
 		"pipeline_tag": [],

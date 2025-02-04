@@ -1,5 +1,3 @@
-from collections.abc import Callable
-from .shapeEval import evalShape
 from .quicklog import log
 
 printTracking = True
@@ -34,8 +32,7 @@ class Ghost(object):
 
   def __bool__(self):
     log(f"__bool__")
-    return True
-    raise Exception("invalid operation - not allowed to return anything other than bool")
+    raise Exception("invalid expression: use == True|False instead")
 
   def __iter__(self):
     log('iter')
@@ -43,12 +40,11 @@ class Ghost(object):
   def __contains__(self, item):
     log(f"__contains__ {item}")
     #raise Exception("invalid operation - requires bool return")
-
     return True
 
   def __call__(self, *args, **kwargs):
     log(f"__call__ {args}")
-    return self.tracking
+    return self
 
 
 

@@ -1,6 +1,7 @@
 from typing import Union, Self, Any
 import sys, pprint
-from .utility import unwrapFromSingleTuple
+import io
+from .quicklog import log
 
 class shapeNode:
   def __init__(self, containerType: Union[list|dict|str|tuple|None]=None, value:str=None, parent=None):
@@ -151,11 +152,46 @@ def objectCrawler(obj, nodeWriter):
   else:
     nodeWriter.writeName(obj)
 
-def evalShape(obj, setAnyType=False):
-  w = nodeWriter()
-  objectCrawler(obj, w)
+class BaseShape:
+  def __init__(self, obj):
+    self.obj = obj
 
-  return nodeGraphToObj(w.h, setAnyType)
+  def __repr__(self):
+    ss = io.StringIO()
+    pprint.pprint(self.obj, stream=ss, indent=2)
+    ssLen = ss.tell()
+    ss.seek(0)
+    return ss.read(ssLen - 1)
+
+  @staticmethod
+  def Factory(obj):
+    if isinstance(obj, dict): return DictShape(obj)
+    if isinstance(obj, list): return ListShape(obj)
+    if isinstance(obj, str): return StrShape(obj)
+    raise TypeError(f"type {type(obj)} unexpected")
+
+class DictShape(dict, BaseShape):
+  def __init__(self, obj):
+    super().__init__(obj)
+    self.obj = obj
+
+class ListShape(list, BaseShape):
+  def __init__(self, obj):
+    super().__init__(obj)
+    self.obj = obj
+
+class StrShape(str, BaseShape):
+  def __init__(self, obj):
+    super().__init__(obj)
+    self.obj = obj
 
 def printShape(obj, setAnyType=False):
-  pprint.pprint(evalShape(obj, setAnyType), indent=2)
+  return BaseShape.Factory(evalShape2(obj, setAnyType))
+
+def evalShape2(obj, setAnyType=False):
+  w = nodeWriter()
+  objectCrawler(obj, w)
+  return nodeGraphToObj(w.h, setAnyType)
+
+def evalShape(obj, setAnyType=False):
+  return printShape(obj, setAnyType)

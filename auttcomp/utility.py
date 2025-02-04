@@ -1,3 +1,4 @@
+import sys
 from types import SimpleNamespace
 from .quicklog import log
 
@@ -48,3 +49,32 @@ def unwrapFromSingleTuple(obj):
   if isinstance(obj, tuple) and len(obj) == 1:
     return obj[0]
   return obj
+
+def traceFrame(func):
+
+  def enable(frame, a, b):
+    log(SysUtil.getCallDetail(frame))
+
+  def disable(frame, a, b): pass
+
+  def traceFrameWrapper(*args, **kargs):
+    sys.settrace(enable)
+    try:
+      return func(*args, **kargs)
+    finally:
+      sys.settrace(disable)
+  return traceFrameWrapper
+
+class SysUtil():
+
+  @staticmethod
+  def getCallArgs(frame):
+    c = frame.f_code
+    return {x: frame.f_locals[x] for x in c.co_varnames[:c.co_argcount]}
+
+  @staticmethod
+  def getCallDetail(frame):
+    return {
+      "func": frame.f_code.co_name,
+      "args": SysUtil.getCallArgs(frame)
+    }

@@ -10,17 +10,17 @@ data = getSampleData()
 
 @tracelog("test_at")
 def test_at():
-  sr = f(data) > f.shapeObj | f.at(lambda x: x.models) 
+  sr = f(data) > f.shape | f.at(lambda x: x.models)
   assert "author" in sr[0].keys()
 
 @tracelog("test_map")
 def test_map():
-  r1 = f(data) > f.shapeObj | f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
+  r1 = f(data) > f.shape | f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
   assert r1 == ['str']
 
 @tracelog("test_author_query")
 def test_author_query():
-  schemaQuery = f(data) > f.shapeObj | f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
+  schemaQuery = f(data) > f.shape | f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
   dataQuery = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
 
   assert schemaQuery == ['str']
@@ -120,3 +120,7 @@ def test_join():
   j = f(resCountByAuthor) > f.innerJoin(likesByAuthor, keySelect, keySelect, valueSelect, valueSelect) | list
 
   assert j == [('deepseek-ai', (14027, 12)), ('bytedance-research', (221, 2)), ('Qwen', (596, 4))]
+
+@tracelog("test_join")
+def test_shape():
+  pass

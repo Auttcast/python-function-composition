@@ -144,9 +144,6 @@ class Api:
   def shape(obj:Any) -> (): pass
 
   @staticmethod
-  def shapeObj(obj:Any) -> Any: pass
-
-  @staticmethod
   def any(func:Callable[[Any], Any]) -> Callable[[Any], Any]: pass
 
   @staticmethod
@@ -191,7 +188,6 @@ Api.list = Composable(list)
 Api.distinct = Composable(lambda x: list(functools.reduce(lambda a, b: a+[b] if b not in a else a, x, [])))
 Api.flatmap = Composable(curriedFlatmap)
 Api.shape = Composable(printShape)
-Api.shapeObj = Composable(evalShape)
 Api.any = Composable(curriedAny)
 Api.all = Composable(curriedAll)
 Api.reverse = Composable(reversed)
