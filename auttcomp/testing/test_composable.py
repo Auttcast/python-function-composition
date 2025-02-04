@@ -1,3 +1,4 @@
+from ..composable import Composable
 from ..quicklog import tracelog, log
 from ..extensions import Api as f
 
@@ -116,15 +117,23 @@ def test_partial_multi_nested_funcs_value_binding():
   comp = mathx & 2 & 5 & 1
   assert comp(1) == 5
   assert comp(9) == 1
-  
+
 @tracelog("test_partial_multi_param_funcs_value_binding")
 def test_partial_multi_param_funcs_value_binding():
-
-  mathx = f(lambda a, b, c, d: (a*b)/(c+d))
+  mathx = f(lambda a, b, c, d: (a * b) / (c + d))
   comp = mathx & 2 & 5 & 1
   assert comp(1) == 5
   assert comp(9) == 1
-  
+
+
+@tracelog("test_partial_map")
+def test_partial_map():
+  cmap = Composable(map)
+  square = lambda x: x ** 2
+  comp = cmap & square
+  assert list(comp([1, 2, 3])) == [1, 4, 9]
+
+
 @tracelog("test_dynamic_wrapping")
 def test_dynamic_wrapping():
 

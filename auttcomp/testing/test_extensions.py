@@ -1,12 +1,12 @@
 from collections.abc import Callable
 
 from ..extensions import Api
-from .testBase import getSampleData
+from .testBase import getHuggingFaceSample
 from ..quicklog import tracelog
 
 f = Api
 
-data = getSampleData()
+data = getHuggingFaceSample()
 
 @tracelog("test_at")
 def test_at():

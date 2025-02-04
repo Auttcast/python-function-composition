@@ -1,7 +1,8 @@
-from ..shapeEval import evalShape, shapeNode, nodeGraphToObj
-from ..quicklog import tracelog
+from ..shapeEval import evalShape, shapeNode, nodeGraphToObj, BaseShape, DictShape, ListShape, TupleShape
+from ..quicklog import tracelog, log
 import json
 from types import SimpleNamespace
+from ..utility import SysUtil, ObjUtil
 
 @tracelog("test_shapeNode")
 def test_shapeNode():
@@ -118,4 +119,19 @@ def test_evalShape_dict4():
   s = evalShape(obj)
   assert s == {"l2p1": [("str", ('int'))], "l2p2": ("str", 'int')}
 
+@tracelog("test_shapeEval_getAttr_returns_shape")
+def test_shapeEval_getAttr_returns_shape():
+  obj = {
+    "l2p1": [("foo", (1))],
+    "l2p2": ("x", 123)
+  }
+
+  s = evalShape(obj)
+  assert isinstance(s, DictShape)
+  assert isinstance(s.l2p1, ListShape)
+
+  #SysUtil.enableTracing(filterFunc=lambda x: "shapeEval" in x.meta.file, mapFunc=lambda x: (x.func, x.args))
+  s1 = s.l2p1[0]
+  assert isinstance(s1, TupleShape), f"the shape is {type(s1)}"
+  #SysUtil.disableTracing()
 

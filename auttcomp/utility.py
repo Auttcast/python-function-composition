@@ -65,16 +65,74 @@ def traceFrame(func):
       sys.settrace(disable)
   return traceFrameWrapper
 
+class ConsoleColor:
+  HEADER = '\033[95m'
+  BLUE = '\033[94m'
+  CYAN = '\033[96m'
+  GREEN = '\033[92m'
+  WARNING = '\033[93m'
+  FAIL = '\033[91m'
+  BOLD = '\033[1m'
+  UNDERLINE = '\033[4m'
+  END = '\033[0m'
+
+
+class ObjUtil():
+
+  @staticmethod
+  def printProps(obj):
+    print(f"\n")
+    print(type(obj))
+    if isinstance(obj, dict):
+      for key in obj.keys():
+        print(f"{ConsoleColor.HEADER}{key}{ConsoleColor.END}:: {obj[key]}")
+    else:
+      for attr in list(filter(lambda x: "__" not in x, dir(obj))):
+        print(f"{ConsoleColor.HEADER}{attr}{ConsoleColor.END}: {getattr(obj, attr)}")
+
+    print(f"\n")
+
 class SysUtil():
 
   @staticmethod
-  def getCallArgs(frame):
+  def getCallArgs(frame, withData=False):
     c = frame.f_code
-    return {x: frame.f_locals[x] for x in c.co_varnames[:c.co_argcount]}
+    if withData:
+      return SimpleNamespace(**{x: frame.f_locals[x] for x in c.co_varnames[:c.co_argcount]})
+    else:
+      return SimpleNamespace(**{x: type(frame.f_locals[x]) for x in c.co_varnames[:c.co_argcount]})
 
   @staticmethod
-  def getCallDetail(frame):
-    return {
+  def getCallDetail(frame, withData=False):
+    #cd['frame'].f_globals['__file__']
+    file = frame.f_globals['__file__'] if '__file__' in frame.f_globals.keys() else ""
+    if file is None: file = ""
+    return SimpleNamespace(**{
+      "meta": SimpleNamespace(**{"frame": frame, "file": file}),
       "func": frame.f_code.co_name,
-      "args": SysUtil.getCallArgs(frame)
-    }
+      "args": SysUtil.getCallArgs(frame, withData)
+    })
+
+  @staticmethod
+  def __enabled(withData, filterFunc, mapFunc):
+    if mapFunc is None: mapFunc = lambda x: x
+    def __partialEnable(frame, a, b):
+      cd = SysUtil.getCallDetail(frame, withData)
+      if filterFunc is not None:
+        if filterFunc(cd):
+          print(mapFunc(cd))
+      else:
+        print(mapFunc(cd))
+    return __partialEnable
+
+  @staticmethod
+  def __disable(frame, a, b): pass
+
+  @staticmethod
+  def enableTracing(withData=False, filterFunc=None, mapFunc=None): # maskFunc callDetail -> bool
+    sys.settrace(SysUtil.__enabled(withData, filterFunc, mapFunc))
+
+  @staticmethod
+  def disableTracing():
+    sys.settrace(SysUtil.__disable)
+

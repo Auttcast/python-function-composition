@@ -167,31 +167,74 @@ class BaseShape:
   def Factory(obj):
     if isinstance(obj, dict): return DictShape(obj)
     if isinstance(obj, list): return ListShape(obj)
+    if isinstance(obj, tuple): return TupleShape(obj)
     if isinstance(obj, str): return StrShape(obj)
-    raise TypeError(f"type {type(obj)} unexpected")
+    return NoneShape()
+
+
+
+
+class NoneShape(BaseShape):
+  def __init__(self):
+    super().__init__(None)
+
+
+
 
 class DictShape(dict, BaseShape):
   def __init__(self, obj):
     super().__init__(obj)
     self.obj = obj
 
+  def __repr__(self): return BaseShape.__repr__(self)
+  
+  def __getattr__(self, item):
+    if item in self.obj.keys(): return BaseShape.Factory(self.obj[item])
+    return NoneShape()
+
+
+
+
 class ListShape(list, BaseShape):
   def __init__(self, obj):
     super().__init__(obj)
     self.obj = obj
+    
+  def __repr__(self): return BaseShape.__repr__(self)
+
+  def __getattr__(self, item):
+    if hasattr(self.obj, item): return BaseShape.Factory(self.obj[item])
+    return NoneShape()
+
+  def __getitem__(self, item):
+    return BaseShape.Factory(self.obj[item])
+
+
+
 
 class StrShape(str, BaseShape):
   def __init__(self, obj):
     super().__init__(obj)
     self.obj = obj
 
-def printShape(obj, setAnyType=False):
-  return BaseShape.Factory(evalShape2(obj, setAnyType))
+  def __repr__(self): return BaseShape.__repr__(self)
 
-def evalShape2(obj, setAnyType=False):
-  w = nodeWriter()
-  objectCrawler(obj, w)
-  return nodeGraphToObj(w.h, setAnyType)
+
+
+
+class TupleShape(str, BaseShape):
+  def __init__(self, obj):
+    super().__init__(obj)
+    self.obj = obj
+
+  def __repr__(self): return BaseShape.__repr__(self)
+
+
+
+
 
 def evalShape(obj, setAnyType=False):
-  return printShape(obj, setAnyType)
+  w = nodeWriter()
+  objectCrawler(obj, w)
+  obj = nodeGraphToObj(w.h, setAnyType)
+  return BaseShape.Factory(obj)
