@@ -1,38 +1,117 @@
-light weight wrapper for inline-pipe functional composition in python
+bringing inline composition to python (like from your favorite languages F#, powershell, kql, haskell, etc)
 
-## Usage
+## Guide
+
+### Composition with |
+
+g(f(x)) == (f | g)(x)
+
+To achieve inline composition, any callables must be wrapped with the Composable object
 
 ```python
-import composable
+from auttcomp.extensions import Api as f
 
-f = composable.Composable
+square = f(lambda x: x ** 2)
+add3 = f(lambda x: x + 3)
 
-incPass = f(lambda x,y: (x+1, y+1))
-power = f(lambda x,y: x**y)
-withStr = f(lambda x: (x, str(x)))
-strLen = f(lambda x,y: len(y))
-
-def test_various_param():
-  func = incPass | power | withStr | strLen
-  assert func(3, 3) == 3
+comp = square | add3
+assert comp(3) == 12
 ```
 
-## Design Notes
-Minimal design in a single class - Composable
+### Automatic wrapping
 
-Currently it only wraps individual lambdas/function by explicitely invoking Composable, as it is a callable class
+If the composition chain starts with a Compsable, the rest of the chain is automatically wrapped!
 
-The class overrides the pipe operator so that it may interact with other Composables to form a composition
+```python
+from auttcomp.extensions import Api as f
 
-So Composable(func) (or just f(func)) returns a wrapped function
+square = f(lambda x: x ** 2)
+add3 = lambda x: x + 3
 
-When inline-composition is invoked thru the pipe operator, an addition Composable object is created which chains the two functions together
+comp = square | add3 | (lambda x: x + 10)
+assert comp(3) == 22
+```
 
-Effectively, h(k(g(f(x)))) can now be represented as (f | g | k | h)(x)
+### Partial Application with &
 
-## Considering TODOs
-* automatic wrapping for classes, attributes, etc
-* exception handling, type hinting
+Consider python's map function - map(func, data)
+
+In this example, & is used to partially apply the square func to map
+
+```python
+from auttcomp.extensions import Api as f
+
+square = lambda x: x ** 2
+cmap = f(map)
+pmap = cmap & square
+
+assert list(pmap([1, 2, 3])) == [1, 4, 9]
+```
+
+### Identity functions and invocation with >
+
+When Composable receives a non-callable type, it constructs an identify function for that data
+
+```python
+from auttcomp.extensions import Api as f
+from auttcomp.testing.testBase import getHuggingFaceSample
+
+data = getHuggingFaceSample()
+
+f(data)
+```
+
+The data in this sample is a search result from the Hugging Face api. 
+
+We'll explore the data with a query soon, but first we'd like to know about it's structure. So we'll invoke the f.shape function
+
+Because ">" is used, the identify function is invoked. This pipes the data into the f.shape function.
+
+The f.shape function will tell us about the format of this data structure!
+
+```python
+f(data) > f.shape
+```
+
+Which returns the following:
+
+```python
+{ 'activeFilters': { 'dataset': [],
+                     'language': [],
+                     'library': [],
+                     'license': [],
+                     'other': [],
+                     'pipeline_tag': []},
+  'models': [ { 'author': 'str',
+                'authorData': { '_id': 'str',
+                                'avatarUrl': 'str',
+                                'followerCount': 'int',
+                                'fullname': 'str',
+                                'isEnterprise': 'bool',
+                                'isHf': 'bool',
+                                'isMod': 'bool',
+                                'isPro': 'bool',
+                                'name': 'str',
+                                'type': 'str'},
+                'downloads': 'int',
+                'gated': 'bool|str',
+                'id': 'str',
+                'inference': 'str',
+                'isLikedByUser': 'bool',
+                'lastModified': 'str',
+                'likes': 'int',
+                'pipeline_tag': 'str',
+                'private': 'bool',
+                'repoType': 'str',
+                'widgetOutputUrls': ['str']}],
+  'numItemsPerPage': 'int',
+  'numTotalItems': 'int',
+  'pageIndex': 'int'}
+```
+
+### Extensions API
+
+TODO
 
 ## Testing
 pytest 7.4.3
