@@ -7,10 +7,10 @@ enableLogging = False
 class Composable:
 
   def __init__(self, func):
-    self.isData = not isinstance(func, Callable)
+    self.__isData = not isinstance(func, Callable)
     self.f = func
     self.g = None
-    self.chained = False
+    self.__chained = False
 
   def __log(self, message):
     if enableLogging:
@@ -19,14 +19,14 @@ class Composable:
   def __isChained(self, target) -> Optional[bool]:
     if target is None: return None
     if not isinstance(target, Composable): return None
-    return target.chained
+    return target.__chained
 
   def __invokeNative(self, func, name, args):
-    self.__log(f"START FUNCTION ----------------- {args} isData: {self.isData}")
-    if self.isData: return (self.f,)
+    self.__log(f"START FUNCTION ----------------- {args} isData: {self.__isData}")
+    if self.__isData: return (self.f,)
     r = func(*args)
     if type(r) not in [type((1,)), type(None)]: r = (r,)
-    self.__log(f"END FUNCTION   ----------------- {args} ->  isData: {self.isData} r: {r}")
+    self.__log(f"END FUNCTION   ----------------- {args} ->  isData: {self.__isData} r: {r}")
     return r
   
   def __invokeCompose(self, func, name, args):
@@ -46,8 +46,8 @@ class Composable:
     return result
     
   def __getChainState(self):
-      terminatingUnchained = not self.chained and self.__isChained(self.f) == None and self.__isChained(self.g) == None
-      terminatingChain = not self.chained and self.__isChained(self.g)
+      terminatingUnchained = not self.__chained and self.__isChained(self.f) == None and self.__isChained(self.g) == None
+      terminatingChain = not self.__chained and self.__isChained(self.g)
       return (terminatingUnchained, terminatingChain)
     
   def __call__(self, *args):
@@ -75,12 +75,12 @@ class Composable:
     if not isinstance(other, Composable): other = Composable.__internalFactory(other)
 
     newComp = Composable.__internalFactory(self)
-    newComp.isData = self.isData
-    self.chained = True
-    newComp.chained = False
+    newComp.__isData = self.__isData
+    self.__chained = True
+    newComp.__chained = False
     otherComp = Composable.__internalFactory(other.f)
-    otherComp.chained = True
-    otherComp.isData = self.isData
+    otherComp.__chained = True
+    otherComp.__isData = self.__isData
     newComp.g = otherComp
 
     return newComp
