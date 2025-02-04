@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Iterable, Any, Union, Generic, TypeVar
+from typing import Any, Union, Generic, TypeVar, Self, Iterable, Tuple
 
 from .quicklog import log
 
@@ -7,18 +7,27 @@ printTracking = True
 
 type EQ = '=='
 type NEQ = '!='
+type GT = '>'
+type GE = '>='
+type LT = '<'
+type LE = '<='
+type Conditional = Union[EQ | NEQ | GT | GE | LT | LE]
+
+
+type ADD = 'add'
 type AND = 'and'
 type OR = 'or'
-type GT = '>'
-type LT = '<'
-type ADD = 'add'
+
+
+
+type GROUP = 'GROUP'
 
 T = TypeVar('T')
 
 class Ghost(Generic[T]):
   def __init__(self):
     super().__init__()
-    self.tracking : T = []
+    self.tracking : T = list[T]()
 
   def __repr__(self):
     return "****SELF****"
@@ -33,8 +42,15 @@ class Ghost(Generic[T]):
 
   def __getitem__(self, index):
     if printTracking: log(f"__getitem__ {index}")
-    self.tracking.append(index.tracking)
-    return None
+    #if isinstance(index, Tuple) and len(index) > 1 and all(list(map(lambda x: isinstance(x, Ghost), index))):
+    if isinstance(index, Tuple) and len(index) > 1:
+      shift = -len(index)
+      firstN = self.tracking[0:shift]
+      mergedLastN = [i[0] for i in self.tracking[shift:]]
+      self.tracking = firstN + [mergedLastN]
+
+    #self.tracking.append(index.tracking)
+    return self
 
 
 
@@ -62,50 +78,54 @@ class Ghost(Generic[T]):
   def __eq__(self, other):
     log(f"__eq__ {('==', other)}")
     self.tracking[-1:][0].append((EQ, other))
-    return other
+    return self
 
   def __ne__(self, other):
     log(f"__ne__ {('!=', other)}")
     self.tracking[-1:][0].append((NEQ, other))
-    return other
-
-  def __and__(self, other):
-    log(f"__and__ {other}")
-    self.tracking.append((AND, other(self.tracking)))
-    return other
-
-  def __or__(self, other):
-    log(f"__or__ {other}")
-    self.tracking.append((OR, other(self.tracking)))
-    return other
+    return self
 
   def __gt__(self, other):
     log(f"__gt__ {other}")
     self.tracking[-1:][0].append((GT, other))
-    return other
+    return self
+
+  def __ge__(self, other):
+    log(f"__ge__ {other}")
+    self.tracking[-1:][0].append((GE, other))
+    return self
 
   def __lt__(self, other):
     log(f"__lt__ {other}")
     self.tracking[-1:][0].append((LT, other))
-    return other
+    return self
+
+  def __le__(self, other):
+    log(f"__le__ {other}")
+    self.tracking[-1:][0].append((LE, other))
+    return self
+
+
+
+  def __and__(self, other):
+    log(f"__and__ {other}")
+    self.tracking.append((AND, other(self.tracking)))
+    return self
+
+  def __or__(self, other):
+    log(f"__or__ {other}")
+    self.tracking.append((OR, other(self.tracking)))
+    return self
 
   def __add__(self, other):
     log(f"__add__ {other}")
     self.tracking.append((AND, other(self.tracking)))
-    return other
+    return self
 
-type Operation = Union[EQ|NEQ|AND|OR|GT|LT|ADD]
-type Const = Any
-type Property = str
-type SelectExpression = [Property]
-type WhereExpression = [SelectExpression, [Property, (Operation, Union[Property|Any])]]
 
-def select(func:Callable[[Any], [SelectExpression]]) -> [SelectExpression]:
-  g = Ghost[SelectExpression]()
-  r = func(g)
-  return r.tracking
+type Property = Union[str | [str, (Conditional, str)]]
 
-def where(func:Callable[[Any], WhereExpression]) -> WhereExpression:
-  g = Ghost[WhereExpression]()
+def query(func:Callable[[Any], [[Property]]]) -> [[Property]]:
+  g = Ghost[[Property]]()
   r = func(g)
   return r.tracking

@@ -3,7 +3,6 @@ from types import SimpleNamespace
 from ..quicklog import tracelog, log
 from ..utility import SysUtil
 import sys
-from ..queryBuilder import select
 
 @tracelog("test_SysUtil")
 def test_SysUtil():
