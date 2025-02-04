@@ -22,6 +22,8 @@ assert comp(3) == 12
 
 If the composition chain starts with a Compsable, the rest of the chain is automatically wrapped!
 
+(note this does not apply to & (partial application) nor > (identity invocation)
+
 ```python
 from auttcomp.extensions import Api as f
 
@@ -58,7 +60,7 @@ from auttcomp.testing.testBase import getHuggingFaceSample
 
 data = getHuggingFaceSample()
 
-f(data)
+f(data.models)
 ```
 
 The data in this sample is a search result from the Hugging Face api. 
@@ -70,48 +72,131 @@ Because ">" is used, the identify function is invoked. This pipes the data into 
 The f.shape function will tell us about the format of this data structure!
 
 ```python
-f(data) > f.shape
+f(data.models) > f.shape
 ```
 
 Which returns the following:
 
 ```python
-{ 'activeFilters': { 'dataset': [],
-                     'language': [],
-                     'library': [],
-                     'license': [],
-                     'other': [],
-                     'pipeline_tag': []},
-  'models': [ { 'author': 'str',
-                'authorData': { '_id': 'str',
-                                'avatarUrl': 'str',
-                                'followerCount': 'int',
-                                'fullname': 'str',
-                                'isEnterprise': 'bool',
-                                'isHf': 'bool',
-                                'isMod': 'bool',
-                                'isPro': 'bool',
-                                'name': 'str',
-                                'type': 'str'},
-                'downloads': 'int',
-                'gated': 'bool|str',
-                'id': 'str',
-                'inference': 'str',
-                'isLikedByUser': 'bool',
-                'lastModified': 'str',
-                'likes': 'int',
-                'pipeline_tag': 'str',
-                'private': 'bool',
-                'repoType': 'str',
-                'widgetOutputUrls': ['str']}],
-  'numItemsPerPage': 'int',
-  'numTotalItems': 'int',
-  'pageIndex': 'int'}
+[ { 'author': 'str',
+    'authorData': { '_id': 'str',
+                    'avatarUrl': 'str',
+                    'followerCount': 'int',
+                    'fullname': 'str',
+                    'isEnterprise': 'bool',
+                    'isHf': 'bool',
+                    'isMod': 'bool',
+                    'isPro': 'bool',
+                    'name': 'str',
+                    'type': 'str'},
+    'downloads': 'int',
+    'gated': 'bool|str',
+    'id': 'str',
+    'inference': 'str',
+    'isLikedByUser': 'bool',
+    'lastModified': 'str',
+    'likes': 'int',
+    'pipeline_tag': 'str',
+    'private': 'bool',
+    'repoType': 'str',
+    'widgetOutputUrls': ['str']}]
 ```
 
-### Extensions API
+### Extensions Api
 
-TODO
+Python already has many common higher order functions (map, filter, reduce, etc). Those functions, and others can be implemented as follows.
+
+```python
+#list the author of each model
+f(data.models) > f(map) & (lambda x: x.authorData) | f(map) & (lambda x: x.name) | list
+```
+
+However, for convenicne, many common functions have been curried and attached to f. So the same query could also be described as...
+
+```python
+f(data.models) > f.map(lambda x: x.authorData) | f.map(lambda x: x.name) | list
+```
+
+or even...
+
+```python
+getAuthorData = lambda x: x.authorData
+getName = lambda x: x.name
+comp = f.map & getAuthorData | f.map & getName | list
+f(data.models) > comp
+```
+
+### Example query
+
+Let's create a list which shows the authors with the most downloads.
+
+f.shape will be used to show the result of the query at each stage.
+
+First, group by author
+
+```python
+f(data.models) > f.group(lambda x: x.author) | list | f.shape
+```
+```python
+[ { 'key': 'str',
+    'value': [ { 'author': 'str',
+                 'authorData': { '_id': 'str',
+                                 'avatarUrl': 'str',
+                                 'followerCount': 'int',
+                                 'fullname': 'str',
+                                 'isEnterprise': 'bool',
+                                 'isHf': 'bool',
+                                 'isMod': 'bool',
+                                 'isPro': 'bool',
+                                 'name': 'str',
+                                 'type': 'str'},
+                 'downloads': 'int',
+                 'gated': 'bool|str',
+                 'id': 'str',
+                 'inference': 'str',
+                 'isLikedByUser': 'bool',
+                 'lastModified': 'str',
+                 'likes': 'int',
+                 'pipeline_tag': 'str',
+                 'private': 'bool',
+                 'repoType': 'str',
+                 'widgetOutputUrls': ['str']}]}]
+```
+
+Map to (key, sumDownloads)
+
+```python
+f(data.models) > (
+  f.group(lambda x: x.author)
+  | f.map(lambda g: (
+    g.key,
+    f(g.value) > f.map(lambda x: x.downloads) | sum )
+  ) | list | f.shape
+)
+```
+```python
+[('str', 'int')]
+```
+
+Sort by descending downloads and take the top 5 results
+
+```python
+f(data.models) > (
+  f.group(lambda x: x.author)
+  | f.map(lambda g: (
+    g.key,
+    f(g.value) > f.map(lambda x: x.downloads) | sum )
+  )
+  | f.sortByDescending(lambda x: x[1])
+  | f.take(5))
+```
+```python
+[('black-forest-labs', 1548084),
+ ('deepseek-ai', 1448374),
+ ('microsoft', 264891),
+ ('unsloth', 142908),
+ ('openbmb', 135782)]
+```
 
 ## Testing
 pytest 7.4.3
