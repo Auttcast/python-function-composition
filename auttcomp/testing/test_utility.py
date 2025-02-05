@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from ..quicklog import tracelog, log
+from ..quicklog import tracelog
 from ..utility import SysUtil
 import sys
 

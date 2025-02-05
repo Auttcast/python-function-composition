@@ -1,6 +1,4 @@
 from types import SimpleNamespace
-
-from .quicklog import log
 from typing import Iterable
 
 printTracking = True

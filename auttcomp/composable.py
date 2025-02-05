@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Iterable
+from typing import Callable, Optional
 import inspect
 from .quicklog import log
 

@@ -1,11 +1,3 @@
-#tabular
-#complex
-#time series
-
-
-sampleData = [
-  {}
-]
 
 sampleData_huggingFace = '''
 {

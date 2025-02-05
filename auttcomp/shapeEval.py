@@ -1,7 +1,6 @@
 from typing import Union, Self, Any
 import sys, pprint
 import io
-from .quicklog import log
 
 class shapeNode:
   def __init__(self, containerType: Union[list|dict|str|tuple|None]=None, value:str=None, parent=None):

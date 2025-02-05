@@ -1,8 +1,6 @@
-from collections.abc import Callable
-
 from ..extensions import Api
 from .testBase import getHuggingFaceSample
-from ..quicklog import tracelog
+from ..quicklog import tracelog, log
 
 f = Api
 
@@ -132,7 +130,8 @@ def test_distinctSet():
   assert slowDistinct == fastDistinct
 
 
-@tracelog("test_property_as_expression", enable=True)
-def xtest_property_as_expression():
-  r = f(data) > f.select(lambda x: x.models.authorData.fullName) | list
-  assert r != None
+@tracelog("test_property_as_expression")
+def test_property_as_expression():
+
+  assert (f(data) > f.select(lambda x: x.models)) == (f(data) > f.at(lambda x: x.models))
+  assert (f(data) > f.select(lambda x: x.models.authorData)) == (f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.authorData) | list)

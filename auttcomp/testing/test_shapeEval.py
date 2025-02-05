@@ -1,8 +1,7 @@
-from ..shapeEval import evalShape, shapeNode, nodeGraphToObj, BaseShape, DictShape, ListShape, TupleShape
-from ..quicklog import tracelog, log
+from ..shapeEval import evalShape, shapeNode, nodeGraphToObj, DictShape, ListShape, TupleShape
+from ..quicklog import tracelog
 import json
 from types import SimpleNamespace
-from ..utility import SysUtil, ObjUtil
 
 @tracelog("test_shapeNode")
 def test_shapeNode():
