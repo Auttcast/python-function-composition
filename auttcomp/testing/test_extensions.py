@@ -6,13 +6,15 @@ f = Api
 
 data = getHuggingFaceSample()
 
-@tracelog("test_at")
+@tracelog("test_at", enable=True)
 def test_at():
   sr = f(data) > f.shape | f.at(lambda x: x.models)
+  log('test123')
   assert "author" in sr[0].keys()
 
-@tracelog("test_map")
+@tracelog("test_map", enable=True)
 def test_map():
+  log('test456')
   r1 = f(data) > f.shape | f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
   assert r1 == ['str']
 

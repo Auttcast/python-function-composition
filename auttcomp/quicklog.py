@@ -1,7 +1,4 @@
-enableLogging = False
-enableProdWriting = True
-
-prefix = ""
+import sys
 
 class ConsoleColor:
   HEADER = '\033[95m'
@@ -14,30 +11,38 @@ class ConsoleColor:
   UNDERLINE = '\033[4m'
   END = '\033[0m'
 
+def source(frame):
+  target = frame.f_back.f_back.f_locals
+  if isinstance(target, dict) and 'self' in target.keys() and isinstance(target['self'], object):
+    return target['self'].__class__.__qualname__
+  else:
+    return f"global"
 
-def log(message, override=None):
-  message = str(message)
-  if enableLogging or override == True:
-    print(f"{ConsoleColor.CYAN}{prefix}{ConsoleColor.END}{message}")
+def logFactory(enabled, prefix=""):
+  def invoke(message):
+    if enabled:
+      sourceClass = source(sys._getframe())
+      scm = f"[{ sourceClass }]"
+      bold = f"{ConsoleColor.BOLD}" if sourceClass == "global" else ""
+      wholePrefix = f"{ConsoleColor.CYAN}{prefix} {bold}{scm}".ljust(30, " ")
+      col = ConsoleColor.CYAN + bold
+      print(f"\n{col}{wholePrefix}{len(col) * " "} > {ConsoleColor.END} {str(message)}", end="")
+  return invoke
 
-def tracelog(message, enable=False):
-  message = str(message)
+logProxy = logFactory(False)
+
+def log(message):
+  logProxy(message)
+
+def tracelog(prefix, enable=False):
   def funcWrap(func):
     def loggingWrapper(*args, **kargs):
-      global prefix
-      global enableLogging
-      if enable:
-        enableLogging = True
+      global logProxy
+      logProxy = logFactory(enable, prefix)
+      logProxy(f"{ConsoleColor.GREEN}START{ConsoleColor.END}")
       try:
-        log("\n")
-        log(f"START {message}")
-        prefix = f"{message} "
         func(*args, **kargs)
-        prefix = ""
-        log(f"END {message}")
-        return
       finally:
-        if enable:
-          enableLogging = False
+        logProxy(f"{ConsoleColor.GREEN}END{ConsoleColor.END}")
     return loggingWrapper
   return funcWrap
