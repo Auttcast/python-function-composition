@@ -4,8 +4,6 @@ from ..quicklog import tracelog
 
 data = getHuggingFaceSample()
 
-isLogging = True
-
 @tracelog("test_query_builder_identity")
 def test_select_identity():
   r = f(data) > f.select(lambda x: x) | list

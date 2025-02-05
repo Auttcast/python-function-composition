@@ -198,6 +198,28 @@ f(data.models) > (
  ('openbmb', 135782)]
 ```
 
+## Version 1.0 Notes
+
+- Working with complex objects (combinations of nested array-like and dictionary-like objects) 
+might benefit from an abstraction that treats everything as an array thru the data pipeline.
+Version 1.0 focused primarily on
+the core objects being either list, dict, or SimpleNamespace. And in many cases, type normalization revealed itself as an issue.
+- This project draws a lot of inspiration from LINQ. But while python is a dynamic language, I lean towards favoring
+convenience in accessing the data. Mainly in the context of exploring the data from a console with the shortest amount of typing.
+For example, select(lambda x: x.models.widgetOutputUrls) could access multiple arrays
+and flatmap the result automatically.
+  - Select implemented a unique feature, it passes a Ghost object into the lambda which collects the names of the
+properties accessed. So from the previous example, the ghost would return an array like ['models', 'widgetOutputUrls'].
+And this could inspire work for query compilation models, graph processing, etc.
+- A small effort was made to add type signatures for the extensions api. The majority of signatures are heavily based on callable generics.
+Although I removed them shortly after speculating that my pycharm editor could be glitching out because of something there...
+- Version 2.0 should prioritize:
+  - common data abstraction
+  - plugin architecture
+  - further exploring type annotation
+
+
+
 ## Testing
 pytest 7.4.3
 

@@ -98,7 +98,6 @@ class SysUtil():
 
   @staticmethod
   def getCallDetail(frame, withData=False):
-    #cd['frame'].f_globals['__file__']
     file = frame.f_globals['__file__'] if '__file__' in frame.f_globals.keys() else ""
     if file is None: file = ""
     return SimpleNamespace(**{
