@@ -1,6 +1,6 @@
 import sys
 from types import SimpleNamespace
-from typing import Iterable
+from typing import Iterable, Generator
 from .quicklog import log, ConsoleColor
 
 #explicite only
@@ -72,6 +72,12 @@ def traceFrame(func):
   return traceFrameWrapper
 
 class ObjUtil():
+
+  @staticmethod
+  def execGenerator(gen):
+    if isinstance(gen, Iterable):
+      return [x for x in gen]
+    else: return gen
 
   @staticmethod
   def printProps(obj):

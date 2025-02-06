@@ -91,6 +91,7 @@ def test_group():
                    | f.sortByDescending(lambda x: x[1])
                    | f.take(1)
                    | list)
+
   assert groupByAuthor == [('deepseek-ai', 12)]
 
 

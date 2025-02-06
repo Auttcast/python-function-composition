@@ -157,6 +157,7 @@ class BaseShape:
 
   def __repr__(self):
     ss = io.StringIO()
+    ss.write("\n")
     pprint.pprint(self.obj, stream=ss, indent=2)
     ssLen = ss.tell()
     ss.seek(0)

@@ -1,4 +1,4 @@
-from .utility import normalize, normalizeForKeyExists
+from .utility import normalize, normalizeForKeyExists, ObjUtil
 from .shapeEval import evalShape, DictShape, ListShape, TupleShape, StrShape
 from .composable import Composable
 from typing import Callable, Any, Tuple, Iterable, Dict, Optional, Union, TypeVar
@@ -100,7 +100,7 @@ def curriedSkip(skipCount):
 def curriedGroup(func):
   def partialGroup(data):
     for key, value in itertools.groupby(sorted(data, key=func, reverse=True), key=func):
-      yield SimpleNamespace(**{"key": key, "value": list(value)})
+      yield SimpleNamespace(**{"key": key, "value": ObjUtil.execGenerator(value)})
   return f(partialGroup)
 
 def curriedInnerJoin(leftData, leftKeyFunc, rightKeyFunc, valueSelector):
