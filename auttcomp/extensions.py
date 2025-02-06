@@ -103,8 +103,9 @@ def curriedGroup(func):
       yield SimpleNamespace(**{"key": key, "value": ObjUtil.execGenerator(value)})
   return f(partialGroup)
 
-def curriedInnerJoin(leftData, leftKeyFunc, rightKeyFunc, valueSelector):
-  if valueSelector is None: valueSelector = lambda x: x
+def curriedInnerJoin(leftData, leftKeyFunc, rightKeyFunc, leftValueSelector=None, rightValueSelector=None):
+  if leftValueSelector is None: leftValueSelector = lambda x: x
+  if rightValueSelector is None: rightValueSelector = lambda x: x
 
   def partialInnerJoin(rightData):
     leftGroup = curriedGroup(leftKeyFunc)(leftData)
@@ -116,7 +117,7 @@ def curriedInnerJoin(leftData, leftKeyFunc, rightKeyFunc, valueSelector):
     for rg in rightGroup:
       lv = tracker.get(rg.key)
       if lv is not None:
-        yield (rg.key, valueSelector(lv, rg.value))
+        yield (rg.key, (leftValueSelector(lv), rightValueSelector(rg.value)))
 
   return f(partialInnerJoin)
 

@@ -2,6 +2,9 @@ from typing import Union, Self, Any
 import sys, pprint
 import io
 
+enableShapeLogging = False
+
+
 class shapeNode:
   def __init__(self, containerType: Union[list|dict|str|tuple|None]=None, value:str=None, parent=None):
     self.containerType : Union[list|dict|str|tuple|None] = containerType
@@ -161,7 +164,10 @@ class BaseShape:
     pprint.pprint(self.obj, stream=ss, indent=2)
     ssLen = ss.tell()
     ss.seek(0)
-    return ss.read(ssLen - 1)
+    dataStr = ss.read(ssLen - 1)
+    if enableShapeLogging:
+      print(dataStr)
+    return dataStr
 
   @staticmethod
   def Factory(obj):
@@ -228,7 +234,6 @@ class TupleShape(str, BaseShape):
     self.obj = obj
 
   def __repr__(self): return BaseShape.__repr__(self)
-
 
 
 

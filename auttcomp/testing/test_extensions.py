@@ -46,7 +46,7 @@ def test_flatmap():
                | list)
   assert dataQuery == ['foo', 'foo1', 'foo2', 'foo2']
 
-@tracelog("test_reverse", enable=True)
+@tracelog("test_reverse")
 def test_reverse():
   dataQuery = (f(data) > f.at(lambda x: x.models)
                | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls != None)
@@ -134,7 +134,13 @@ def test_join():
   )
 
   keySelect = lambda x: x[0]
-  j = f(resCountByAuthor) > f.innerJoin(likesByAuthor, keySelect, keySelect, lambda l, r: (l[0][1], r[0][1])) | list
+  j = (f(resCountByAuthor) > f.innerJoin(
+      likesByAuthor,
+      keySelect,
+      keySelect,
+      lambda l: l[0][1],
+      lambda r: r[0][1]
+  ) | list)
 
   assert j == [('deepseek-ai', (14027, 12)), ('bytedance-research', (221, 2)), ('Qwen', (596, 4))]
 
