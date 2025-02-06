@@ -4,7 +4,7 @@ from ..quicklog import tracelog
 
 data = getHuggingFaceSample()
 
-@tracelog("test_query_builder_identity")
+@tracelog("test_select_identity")
 def test_select_identity():
   r = f(data) > f.select(lambda x: x) | list
   assert r == [f(data)()]

@@ -6,13 +6,13 @@ f = Api
 
 data = getHuggingFaceSample()
 
-@tracelog("test_at", enable=True)
+@tracelog("test_at")
 def test_at():
   sr = f(data) > f.shape | f.at(lambda x: x.models)
   log('test123')
   assert "author" in sr[0].keys()
 
-@tracelog("test_map", enable=True)
+@tracelog("test_map")
 def test_map():
   log('test456')
   r1 = f(data) > f.shape | f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
@@ -119,8 +119,7 @@ def test_join():
   )
 
   keySelect = lambda x: x[0]
-  valueSelect = lambda x: x[0][1]
-  j = f(resCountByAuthor) > f.innerJoin(likesByAuthor, keySelect, keySelect, valueSelect, valueSelect) | list
+  j = f(resCountByAuthor) > f.innerJoin(likesByAuthor, keySelect, keySelect, lambda l, r: (l[0][1], r[0][1])) | list
 
   assert j == [('deepseek-ai', (14027, 12)), ('bytedance-research', (221, 2)), ('Qwen', (596, 4))]
 
