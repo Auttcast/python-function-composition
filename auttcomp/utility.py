@@ -17,40 +17,6 @@ def normalize(obj):
   log(f"WARNING normalize unexpected type {type(obj)}")
   return obj
 
-def normalizeForKeyExists(obj):
-  if isListType(obj): return obj
-  if isinstance(obj, dict) or isinstance(obj, SimpleNamespace): return KeyExistWrapper(obj)
-  log(f"WARNING normalizeForKeyExists unexpected type {type(obj)}")
-  return obj
-
-class BaseDictWrapper(dict):
-  def __init__(self, d):
-    super().__init__()
-    self.d = d if not isinstance(d, SimpleNamespace) else vars(d)
-
-  def getKeys(self):
-    return self.d.keys()
-
-class DictWrapper(BaseDictWrapper):
-  def __init__(self, d):
-    super().__init__(d)
-
-  def __getattr__(self, name):
-    if isinstance(self.d, dict):
-      if name in super().getKeys():
-        return self.d[name]
-      return None
-    elif isinstance(self.d, SimpleNamespace):
-      return getattr(self.d, name)
-
-class KeyExistWrapper(BaseDictWrapper):
-
-  def __init__(self, d):
-    super().__init__(d)
-
-  def __getattr__(self, name):
-    return name in super().getKeys()
-
 def unwrapFromSingleTuple(obj):
   if isinstance(obj, tuple) and len(obj) == 1:
     return obj[0]
@@ -76,7 +42,7 @@ class ObjUtil():
   @staticmethod
   def execGenerator(gen):
     if isinstance(gen, Iterable):
-      return [x for x in gen]
+      return list(gen)
     else: return gen
 
   @staticmethod

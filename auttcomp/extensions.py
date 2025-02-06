@@ -1,4 +1,4 @@
-from .utility import normalize, normalizeForKeyExists, ObjUtil
+from .utility import normalize, ObjUtil
 from .shapeEval import evalShape, DictShape, ListShape, TupleShape, StrShape
 from .composable import Composable
 from typing import Callable, Any, Tuple, Iterable, Dict, Optional, Union, TypeVar
@@ -51,7 +51,7 @@ def hasKey(key, obj):
 
 def curriedFlatmap(func):
   def partialFlatmap(data):
-    for ys in map(func, filter(lambda x: func(normalizeForKeyExists(x)), data)):
+    for ys in map(func, filter(lambda x: func(normalize(x)), data)):
       if not isinstance(ys, collections.abc.Iterable):
         #because either the field or it's container could be a collection
         ys = [ys]
@@ -70,16 +70,16 @@ def curriedAll(func):
   return f(curriedAll)
 
 def partialSort(data):
-  return sorted(data)
+  return sorted(ObjUtil.execGenerator(data))
 
 def curriedSortby(func):
   def partialSortby(data):
-    return sorted(data, key=func)
+    return sorted(ObjUtil.execGenerator(data), key=func)
   return f(partialSortby)
 
 def curriedSortbyDescending(func):
   def partialSortbyDescending(data):
-    return sorted(data, key=func, reverse=True)
+    return sorted(ObjUtil.execGenerator(data), key=func, reverse=True)
   return f(partialSortbyDescending)
 
 def curriedTake(count):
@@ -99,7 +99,7 @@ def curriedSkip(skipCount):
 
 def curriedGroup(func):
   def partialGroup(data):
-    for key, value in itertools.groupby(sorted(data, key=func, reverse=True), key=func):
+    for key, value in itertools.groupby(sorted(ObjUtil.execGenerator(data), key=func, reverse=True), key=func):
       yield SimpleNamespace(**{"key": key, "value": ObjUtil.execGenerator(value)})
   return f(partialGroup)
 
@@ -213,6 +213,12 @@ class Api:
     pass
 
   @staticmethod
+  #def flatmap(func:Callable[[T], Iterable[Iterable[R]]]) -> Callable[[T], Iterable[R]]:
+  def flatmapid(func):
+    '''iterable implementation of flatmap using python's native map'''
+    pass
+
+  @staticmethod
   #def shape(obj:T) -> Union[DictShape|ListShape|TupleShape|StrShape]:
   def shape(obj):
     '''evaluates the shape of data, returns a shape object, pprints thru __repr__'''
@@ -305,10 +311,11 @@ Api.list = Composable(list)
 Api.distinct = Composable(lambda x: list(functools.reduce(lambda a, b: a+[b] if b not in a else a, x, [])))
 Api.distinctSet = Composable(lambda x: list(set(x)))
 Api.flatmap = Composable(curriedFlatmap)
+Api.flatmapid = Composable(curriedFlatmap(lambda x: x))
 Api.shape = Composable(evalShape)
 Api.any = Composable(curriedAny)
 Api.all = Composable(curriedAll)
-Api.reverse = Composable(reversed)
+Api.reverse = Composable(lambda x: reversed(ObjUtil.execGenerator(x)))
 Api.sort = Composable(partialSort)
 Api.sortBy = Composable(curriedSortby)
 Api.sortByDescending = Composable(curriedSortbyDescending)

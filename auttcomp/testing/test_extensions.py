@@ -1,3 +1,4 @@
+from ..composable import enableLogging
 from ..extensions import Api
 from .testBase import getHuggingFaceSample
 from ..quicklog import tracelog, log
@@ -39,12 +40,19 @@ def test_reduce():
 
 @tracelog("test_flatmap")
 def test_flatmap():
-  dataQuery = f(data) > f.at(lambda x: x.models) | f.flatmap(lambda x: x.widgetOutputUrls) | list
+  dataQuery = (f(data) > f.at(lambda x: x.models)
+               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls != None)
+               | f.flatmap(lambda x: x.widgetOutputUrls)
+               | list)
   assert dataQuery == ['foo', 'foo1', 'foo2', 'foo2']
 
-@tracelog("test_reverse")
+@tracelog("test_reverse", enable=True)
 def test_reverse():
-  dataQuery = f(data) > f.at(lambda x: x.models) | f.flatmap(lambda x: x.widgetOutputUrls) | list | f.reverse | list
+  dataQuery = (f(data) > f.at(lambda x: x.models)
+               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls != None)
+               | f.flatmap(lambda x: x.widgetOutputUrls)
+               | f.reverse
+               | list)
   assert dataQuery == ['foo2', 'foo2', 'foo1', 'foo']
 
 @tracelog("test_any")
