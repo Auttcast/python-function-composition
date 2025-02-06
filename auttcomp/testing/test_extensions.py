@@ -57,12 +57,18 @@ def test_reverse():
 
 @tracelog("test_any")
 def test_any():
-  dataQuery = f(data) > f.at(lambda x: x.models) | f.flatmap(lambda x: x.widgetOutputUrls) | f.any(lambda x: "1" in x)
+  dataQuery = (f(data) > f.at(lambda x: x.models)
+               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls != None)
+               | f.flatmap(lambda x: x.widgetOutputUrls)
+               | f.any(lambda x: "1" in x))
   assert dataQuery
 
 @tracelog("test_all")
 def test_all():
-  dataQuery = f(data) > f.at(lambda x: x.models) | f.flatmap(lambda x: x.widgetOutputUrls) | f.all(lambda x: "oo" in x)
+  dataQuery = (f(data) > f.at(lambda x: x.models)
+               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls != None)
+               | f.flatmap(lambda x: x.widgetOutputUrls)
+               | f.all(lambda x: "oo" in x))
   assert dataQuery
 
 @tracelog("test_sort")
