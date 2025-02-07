@@ -54,9 +54,10 @@ def curriedFlatmap(func):
     for ys in map(func, filter(lambda x: func(normalize(x)), data)):
       if not isinstance(ys, collections.abc.Iterable):
         #because either the field or it's container could be a collection
-        ys = [ys]
-      for y in ys:
-        yield y
+        yield ys
+      else:
+        for y in ys:
+          yield y
   return f(partialFlatmap)
 
 def curriedAny(func):
