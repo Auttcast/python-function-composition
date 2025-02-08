@@ -85,17 +85,21 @@ def curriedSortbyDescending(func):
 
 def curriedTake(count):
   def partialTake(data):
-    for i in range(0, count):
-      yield data[i]
+    iterCount = 0
+    for x in data:
+      iterCount += 1
+      if iterCount > count:
+        break
+      yield x
   return f(partialTake)
 
 def curriedSkip(skipCount):
   def partialSkip(data):
-    c = 0
-    for i in data:
-      c += 1
-      if c > skipCount:
-        yield data[c-1]
+    iterCount = 0
+    for x in data:
+      iterCount += 1
+      if iterCount > skipCount:
+        yield x
   return f(partialSkip)
 
 def curriedGroup(func):
