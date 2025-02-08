@@ -80,16 +80,13 @@ def test_sort():
 def test_take():
   dist = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | list
   dataQuery = f(dist) > f.take(3) | f.list
-  log(dataQuery)
   assert dataQuery == (f(dist) > f.list)[0:3]
 
-@tracelog("test_skip", enable=True)
+@tracelog("test_skip")
 def test_skip():
   dist = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | list
   log("dist")
-  log(dist)
   dataQuery = f(dist) > f.skip(3) | f.list
-  [log(x) for x in dataQuery]
   assert len(dataQuery) == len(dist[3:])
   assert dataQuery == dist[3:]
 
