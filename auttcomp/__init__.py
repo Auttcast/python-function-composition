@@ -1,4 +1,2 @@
-__all__ = ["composable", "extensions", "quicklog", "testing"]
-from .testing import *
-from .testing.testBase import getHuggingFaceSample
-#from .extensions import Api as f
+__all__ = ["composable", "extensions"]
+from . import extensions
