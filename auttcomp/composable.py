@@ -4,6 +4,18 @@ from .quicklog import log
 
 enableLogging = False
 
+'''
+TODOs
+-get utils from sample proj
+-update ctor to rewrite __CALL__
+-extract workaround func from __CALL__
+-remove all tuple unpacking logic
+-apply tuple deconstruction to native invocations
+-inspect __getParamCount for update
+-unit test __CALL__ param count
+-write documentation
+'''
+
 class Composable:
 
   def __init__(self, func):
