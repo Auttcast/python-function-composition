@@ -14,7 +14,6 @@ def normalize(obj):
   if isListType(obj): return obj
   if isinstance(obj, SimpleNamespace): return obj
   if isinstance(obj, dict): return SimpleNamespace(**obj)
-  log(f"WARNING normalize unexpected type {type(obj)}")
   return obj
 
 def unwrapFromSingleTuple(obj):
