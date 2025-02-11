@@ -1,3 +1,7 @@
+```
+pip install auttcomp
+```
+
 ## Guide
 
 ### Composition with |
