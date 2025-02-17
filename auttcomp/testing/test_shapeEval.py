@@ -1,3 +1,4 @@
+from collections import namedtuple
 from ..shapeEval import evalShape, shapeNode, nodeGraphToObj, DictShape, ListShape, TupleShape
 from ..quicklog import tracelog, log
 import json
@@ -146,3 +147,17 @@ def test_complex_obj_civitai():
   res = f(obj.result.data.json.collection) > f.shape
   log(res)
   #does not throw
+
+@tracelog("test_tuple_with_dupes")
+def test_tuple_with_dupes():
+  tup = namedtuple("mytup", ["a", "b", "c"])
+  t1 = tup(1, 2, 3)
+  sh = evalShape(t1)
+  assert sh == ('int', 'int', 'int')
+
+@tracelog("test_tuple_with_dupes_arr", enable=True)
+def test_tuple_with_dupes():
+  tup = namedtuple("mytup", ["a", "b", "c"])
+  t1 = [tup(1, 2, 3), tup(1, 2, 3)]
+  sh = evalShape(t1)
+  assert sh == [('int', 'int', 'int')]

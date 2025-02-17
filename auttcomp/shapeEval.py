@@ -1,6 +1,7 @@
 from typing import Union, Self, Any
 import sys, pprint
 import io
+from .quicklog import log
 
 enableShapeLogging = False
 
@@ -11,6 +12,7 @@ class shapeNode:
     self.value : str = value
     self.parent:shapeNode = parent
     self.children:[shapeNode] = []
+    self.tupleIndex = None
 
   def addChild(self, node) -> Self:
     node.parent = self
@@ -24,9 +26,9 @@ class shapeNode:
         outParam.append(c)
         return True
 
-  def hasChildWithValue(self, value):
+  def hasChildWithValue(self, value, tupleIndex=None):
     for c in self.children:
-      if c.value == value:
+      if c.value == value and c.tupleIndex == tupleIndex:
         return True
     return False
 
@@ -57,13 +59,14 @@ class nodeWriter():
   def pushTuple(self): self.pushContainer((1,))
   def pushDictKey(self, key): self.pushContainer(key)
 
-  def writeName(self, value):
+  def writeName(self, value, tupleIndex=None):
     name = type(value).__name__
     node = shapeNode(value=name)
+    node.tupleIndex = tupleIndex
     if self.h is None:
       self.h = node
     else:
-      if not self.currentNode.hasChildWithValue(name):
+      if not self.currentNode.hasChildWithValue(name, tupleIndex):
         self.currentNode.addChild(node)
 
 def getPathToNodeRecurse(node):
@@ -117,7 +120,7 @@ def nodeGraphToObj(node:shapeNode, setAnyType=False) -> Any :
   if isinstance(node.containerType, list):
     return [nodeGraphToObj(c, setAnyType) for c in node.children]
   if isinstance(node.containerType, tuple):
-    return tuple([nodeGraphToObj(c, setAnyType) for c in node.children])
+    return tuple([nodeGraphToObj(c, setAnyType) for c in sorted(node.children, key=lambda x: x.tupleIndex)])
 
 
 def dictKv(obj):
@@ -134,7 +137,7 @@ def normalizeType(obj):
     obj = obj.__dict__
   return obj
 
-def objectCrawler(obj, nodeWriter):
+def objectCrawler(obj, nodeWriter, tupleIndex=None):
 
   obj = normalizeType(obj)
 
@@ -152,11 +155,11 @@ def objectCrawler(obj, nodeWriter):
     nodeWriter.apop()
   elif isinstance(obj, tuple):
     nodeWriter.pushTuple()
-    for item in obj:
-      objectCrawler(item, nodeWriter)
+    for i in range(0, len(obj)):
+      objectCrawler(obj[i], nodeWriter, tupleIndex=i)
     nodeWriter.apop()
   else:
-    nodeWriter.writeName(obj)
+    nodeWriter.writeName(obj, tupleIndex)
 
 class BaseShape:
   def __init__(self, obj):
@@ -181,13 +184,9 @@ class BaseShape:
     if isinstance(obj, str): return StrShape(obj)
     return NoneShape()
 
-
-
-
 class NoneShape(BaseShape):
   def __init__(self):
     super().__init__(None)
-
 
 
 
@@ -232,7 +231,7 @@ class StrShape(str, BaseShape):
 
 
 
-class TupleShape(str, BaseShape):
+class TupleShape(BaseShape):
   def __init__(self, obj):
     super().__init__(obj)
     self.obj = obj
