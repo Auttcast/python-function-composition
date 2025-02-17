@@ -74,6 +74,10 @@ def getPathToNodeRecurse(node):
 def getPathToNode(node):
   return "->".join(list(reversed(getPathToNodeRecurse(node))))
 
+def cleanValue(value):
+  if value == "NoneType": return "None"
+  return value or "None"
+
 def nodeGraphToObj_dictKeyEval(nodes:shapeNode, setAnyType=False) -> Any :
   if len(nodes) == 1: return nodeGraphToObj(nodes[0], setAnyType)
   else:
@@ -86,7 +90,7 @@ def nodeGraphToObj_dictKeyEval(nodes:shapeNode, setAnyType=False) -> Any :
     hasContainers = any(containers)
 
     if hasPrimitives and not hasContainers:
-      return "|".join(nodeValues)
+      return "|".join(set(list(map(cleanValue, nodeValues))))
 
     path = getPathToNode(nodes[0].parent.parent)
     key = nodes[0].parent
@@ -107,7 +111,7 @@ def nodeGraphToObj(node:shapeNode, setAnyType=False) -> Any :
     if setAnyType:
       return 'Any'
     else:
-      return node.value
+      return cleanValue(node.value)
   if isinstance(node.containerType, dict):
     return {c.containerType: nodeGraphToObj_dictKeyEval(c.children, setAnyType) for c in node.children}
   if isinstance(node.containerType, list):

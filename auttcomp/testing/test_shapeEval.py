@@ -1,7 +1,9 @@
 from ..shapeEval import evalShape, shapeNode, nodeGraphToObj, DictShape, ListShape, TupleShape
-from ..quicklog import tracelog
+from ..quicklog import tracelog, log
 import json
 from types import SimpleNamespace
+from ..extensions import Api as f
+from .testBase import getCivitaiSample
 
 @tracelog("test_shapeNode")
 def test_shapeNode():
@@ -20,7 +22,7 @@ def test_shapeNode2():
   foo.addChild(shapeNode(value="int"))
 
   r = nodeGraphToObj(main)
-  assert r == {"foo": "str|int"}
+  assert r == {"foo": "int|str"}
 
 @tracelog("test_evalShape_prim")
 def test_evalShape_prim():
@@ -134,3 +136,8 @@ def test_shapeEval_getAttr_returns_shape():
   assert isinstance(s1, TupleShape), f"the shape is {type(s1)}"
   #SysUtil.disableTracing()
 
+@tracelog("test_complex_obj_civitai", enable=True)
+def test_complex_obj_civitai():
+  obj = getCivitaiSample()
+  res = f(obj.result.data.json.collection) > f.shape
+  log(res)
