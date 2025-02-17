@@ -1,4 +1,4 @@
-import sys
+import sys, json
 from types import SimpleNamespace
 from typing import Iterable, Generator
 from .quicklog import log, ConsoleColor
@@ -35,6 +35,11 @@ def traceFrame(func):
     finally:
       sys.settrace(disable)
   return traceFrameWrapper
+
+class JsonUtil:
+  @staticmethod
+  def toObject(jsonStr):
+    return json.loads(jsonStr, object_hook=lambda d: SimpleNamespace(**d))
 
 class ObjUtil():
 
