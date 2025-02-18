@@ -13,6 +13,11 @@ class shapeNode:
     self.parent:shapeNode = parent
     self.children:[shapeNode] = []
     self.tupleIndex = None
+    self.isNullVal = False
+
+  def getNullableContainerName(self):
+    if self.isNullVal: return f"{self.containerType}?"
+    return self.containerType
 
   def addChild(self, node) -> Self:
     node.parent = self
@@ -39,9 +44,11 @@ class nodeWriter():
 
   def apop(self): self.currentNode = self.currentNode.parent
 
-  def pushContainer(self, rawType):
+  def pushContainer(self, rawType, tupleIndex=None, isNullVal=False):
 
     newNode = shapeNode(containerType=rawType)
+    newNode.tupleIndex = tupleIndex
+    newNode.isNullVal = isNullVal
 
     if self.h is None:
       self.currentNode = newNode
@@ -50,17 +57,19 @@ class nodeWriter():
       outParam = []
       if self.currentNode.hasChildWithContainer(rawType, outParam):
         self.currentNode = outParam[0]
+        if newNode.isNullVal:
+          self.currentNode.isNullVal = True
         return
 
       self.currentNode = self.currentNode.addChild(newNode)
 
-  def pushList(self): self.pushContainer([])
-  def pushDict(self): self.pushContainer({})
-  def pushTuple(self): self.pushContainer((1,))
-  def pushDictKey(self, key): self.pushContainer(key)
+  def pushList(self, tupleIndex=None): self.pushContainer([], tupleIndex)
+  def pushDict(self, tupleIndex=None): self.pushContainer({}, tupleIndex)
+  def pushTuple(self, tupleIndex=None): self.pushContainer((1,), tupleIndex)
+  def pushDictKey(self, key, isNullVal=False): self.pushContainer(key, tupleIndex=None, isNullVal=isNullVal)
 
   def writeName(self, value, tupleIndex=None):
-    name = type(value).__name__
+    name = type(value).__name__ if value is not None else "None"
     node = shapeNode(value=name)
     node.tupleIndex = tupleIndex
     if self.h is None:
@@ -77,11 +86,9 @@ def getPathToNodeRecurse(node):
 def getPathToNode(node):
   return "->".join(list(reversed(getPathToNodeRecurse(node))))
 
-def cleanValue(value):
-  if value == "NoneType": return "None"
-  return value or "None"
-
-def nodeGraphToObj_dictKeyEval(nodes:shapeNode, setAnyType=False) -> Any :
+def nodeGraphToObj_dictKeyEval(parentNode:shapeNode, setAnyType=False) -> Any :
+  isNullableContainer = parentNode.isNullVal
+  nodes = parentNode.children
   if len(nodes) == 1: return nodeGraphToObj(nodes[0], setAnyType)
   else:
     notNone = lambda x: x is not None
@@ -92,8 +99,18 @@ def nodeGraphToObj_dictKeyEval(nodes:shapeNode, setAnyType=False) -> Any :
     hasPrimitives = any(values)
     hasContainers = any(containers)
 
+    if isNullableContainer:
+      nodesWithoutNoneType = list(filter(lambda x: x.containerType is not None, nodes))
+      if len(nodesWithoutNoneType) == 1:
+        return nodeGraphToObj(nodesWithoutNoneType[0], setAnyType)
+
     if hasPrimitives and not hasContainers:
-      return "|".join(set(list(map(cleanValue, nodeValues))))
+      if isNullableContainer:
+        #when the container is "nullable?", we won't bother specifying None in the property
+        vals = list(filter(lambda x: x is not None, nodeValues))
+        return "|".join(vals)
+      else:
+        return "|".join(nodeValues)
 
     path = getPathToNode(nodes[0].parent.parent)
     key = nodes[0].parent
@@ -114,9 +131,9 @@ def nodeGraphToObj(node:shapeNode, setAnyType=False) -> Any :
     if setAnyType:
       return 'Any'
     else:
-      return cleanValue(node.value)
+      return node.value
   if isinstance(node.containerType, dict):
-    return {c.containerType: nodeGraphToObj_dictKeyEval(c.children, setAnyType) for c in node.children}
+    return {c.getNullableContainerName(): nodeGraphToObj_dictKeyEval(c, setAnyType) for c in node.children}
   if isinstance(node.containerType, list):
     return [nodeGraphToObj(c, setAnyType) for c in node.children]
   if isinstance(node.containerType, tuple):
@@ -142,19 +159,19 @@ def objectCrawler(obj, nodeWriter, tupleIndex=None):
   obj = normalizeType(obj)
 
   if isinstance(obj, list):
-    nodeWriter.pushList()
+    nodeWriter.pushList(tupleIndex)
     for prop in obj:
       objectCrawler(prop, nodeWriter)
     nodeWriter.apop()
   elif isinstance(obj, dict):
-    nodeWriter.pushDict()
+    nodeWriter.pushDict(tupleIndex)
     for (key, value) in dictKv(obj):
-      nodeWriter.pushDictKey(key)
+      nodeWriter.pushDictKey(key, isNullVal=value is None)
       objectCrawler(value, nodeWriter)
       nodeWriter.apop()
     nodeWriter.apop()
   elif isinstance(obj, tuple):
-    nodeWriter.pushTuple()
+    nodeWriter.pushTuple(tupleIndex)
     for i in range(0, len(obj)):
       objectCrawler(obj[i], nodeWriter, tupleIndex=i)
     nodeWriter.apop()
@@ -164,6 +181,9 @@ def objectCrawler(obj, nodeWriter, tupleIndex=None):
 class BaseShape:
   def __init__(self, obj):
     self.obj = obj
+
+  def __eq__(self, other):
+    return self.obj == other
 
   def __repr__(self):
     ss = io.StringIO()

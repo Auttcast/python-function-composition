@@ -115,7 +115,7 @@ def test_evalShape_dict3():
   s = evalShape(jsonObj)
   assert s == {"l1": {"l2p1": ['int'], "l2p2": ["str"]}}
 
-@tracelog("test_evalShape_dict3")
+@tracelog("test_evalShape_dict4")
 def test_evalShape_dict4():
   obj = {
       "l2p1": [("foo", (1))],
@@ -148,6 +148,21 @@ def test_complex_obj_civitai():
   log(res)
   #does not throw
 
+@tracelog("test_tuple_with_list")
+def test_tuple_with_list():
+  tup = namedtuple("mytup", ["a", "b", "c"])
+  t1 = tup(1, 2, [1])
+  sh = evalShape(t1)
+  log(type(sh))
+  assert sh == ('int', 'int', ['int'])
+
+@tracelog("test_tuple_with_dict")
+def test_tuple_with_dict():
+  tup = namedtuple("mytup", ["a", "b", "c"])
+  t1 = tup(1, 2, {"foo": 1})
+  sh = evalShape(t1)
+  assert sh == ('int', 'int', {"foo": 'int'})
+
 @tracelog("test_tuple_with_dupes")
 def test_tuple_with_dupes():
   tup = namedtuple("mytup", ["a", "b", "c"])
@@ -155,9 +170,27 @@ def test_tuple_with_dupes():
   sh = evalShape(t1)
   assert sh == ('int', 'int', 'int')
 
-@tracelog("test_tuple_with_dupes_arr", enable=True)
-def test_tuple_with_dupes():
+@tracelog("test_tuple_with_dupes_arr")
+def test_tuple_with_dupes_arr():
   tup = namedtuple("mytup", ["a", "b", "c"])
   t1 = [tup(1, 2, 3), tup(1, 2, 3)]
   sh = evalShape(t1)
   assert sh == [('int', 'int', 'int')]
+
+@tracelog("test_dict_sometimes_null")
+def test_dict_sometimes_null():
+  d1 = {"val": 1, "nested": {"n1": 2}}
+  d2 = {"val": 1, "nested": None}
+
+  s = evalShape([d1, d2])
+  log(s)
+  assert s == [{"val": "int", "nested?": {"n1": "int"}}]
+
+@tracelog("test_dict_only_null_props")
+def test_dict_only_null_props():
+  d1 = {"val": 1, "nested": None}
+  d2 = {"val": 1, "nested": None}
+
+  s = evalShape([d1, d2])
+  log(s)
+  assert s == [{"val": "int", "nested?": "None"}]
