@@ -6,12 +6,12 @@ from .quicklog import log
 enableShapeLogging = False
 
 
-class shapeNode:
+class ShapeNode:
   def __init__(self, containerType: Union[list|dict|str|tuple|None]=None, value:str=None, parent=None):
     self.containerType : Union[list|dict|str|tuple|None] = containerType
     self.value : str = value
-    self.parent:shapeNode = parent
-    self.children:[shapeNode] = []
+    self.parent:ShapeNode = parent
+    self.children:[ShapeNode] = []
     self.tupleIndex = None
     self.isNullVal = False
 
@@ -37,16 +37,16 @@ class shapeNode:
         return True
     return False
 
-class nodeWriter():
+class NodeWriter:
   def __init__(self):
-    self.h: Union[shapeNode|None] = None
-    self.currentNode: Union[shapeNode|None] = None
+    self.h: Union[ShapeNode | None] = None
+    self.currentNode: Union[ShapeNode | None] = None
 
-  def apop(self): self.currentNode = self.currentNode.parent
+  def pop(self): self.currentNode = self.currentNode.parent
 
   def pushContainer(self, rawType, tupleIndex=None, isNullVal=False):
 
-    newNode = shapeNode(containerType=rawType)
+    newNode = ShapeNode(containerType=rawType)
     newNode.tupleIndex = tupleIndex
     newNode.isNullVal = isNullVal
 
@@ -70,7 +70,7 @@ class nodeWriter():
 
   def writeName(self, value, tupleIndex=None):
     name = type(value).__name__ if value is not None else "None"
-    node = shapeNode(value=name)
+    node = ShapeNode(value=name)
     node.tupleIndex = tupleIndex
     if self.h is None:
       self.h = node
@@ -86,7 +86,7 @@ def getPathToNodeRecurse(node):
 def getPathToNode(node):
   return "->".join(list(reversed(getPathToNodeRecurse(node))))
 
-def nodeGraphToObj_dictKeyEval(parentNode:shapeNode, setAnyType=False) -> Any :
+def nodeGraphToObj_dictKeyEval(parentNode:ShapeNode, setAnyType=False) -> Any :
   isNullableContainer = parentNode.isNullVal
   nodes = parentNode.children
   if len(nodes) == 1: return nodeGraphToObj(nodes[0], setAnyType)
@@ -126,7 +126,7 @@ def nodeGraphToObj_dictKeyEval(parentNode:shapeNode, setAnyType=False) -> Any :
       return "|".join(nodeCont)
 
 #NOTE: recurse with nodeGraphToObj_dictKeyEval
-def nodeGraphToObj(node:shapeNode, setAnyType=False) -> Any :
+def nodeGraphToObj(node:ShapeNode, setAnyType=False) -> Any :
   if node.value is not None:
     if setAnyType:
       return 'Any'
@@ -143,11 +143,11 @@ def nodeGraphToObj(node:shapeNode, setAnyType=False) -> Any :
 def dictKv(obj):
   if isinstance(obj, dict):
     for k in obj:
-      yield (k, obj[k])
+      yield k, obj[k]
   else:
     v = vars(obj)
     for k in vars(obj).keys():
-      yield (k, v.get(k))
+      yield k, v.get(k)
 
 def normalizeType(obj):
   if hasattr(obj, "__dict__"):
@@ -162,19 +162,19 @@ def objectCrawler(obj, nodeWriter, tupleIndex=None):
     nodeWriter.pushList(tupleIndex)
     for prop in obj:
       objectCrawler(prop, nodeWriter)
-    nodeWriter.apop()
+    nodeWriter.pop()
   elif isinstance(obj, dict):
     nodeWriter.pushDict(tupleIndex)
     for (key, value) in dictKv(obj):
       nodeWriter.pushDictKey(key, isNullVal=value is None)
       objectCrawler(value, nodeWriter)
-      nodeWriter.apop()
-    nodeWriter.apop()
+      nodeWriter.pop()
+    nodeWriter.pop()
   elif isinstance(obj, tuple):
     nodeWriter.pushTuple(tupleIndex)
     for i in range(0, len(obj)):
       objectCrawler(obj[i], nodeWriter, tupleIndex=i)
-    nodeWriter.apop()
+    nodeWriter.pop()
   else:
     nodeWriter.writeName(obj, tupleIndex)
 
@@ -262,7 +262,7 @@ class TupleShape(BaseShape):
 
 
 def evalShape(obj, setAnyType=False):
-  w = nodeWriter()
+  w = NodeWriter()
   objectCrawler(obj, w)
   res = nodeGraphToObj(w.h, setAnyType)
   return BaseShape.Factory(res)

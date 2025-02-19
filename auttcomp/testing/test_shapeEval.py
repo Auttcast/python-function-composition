@@ -1,5 +1,5 @@
 from collections import namedtuple
-from ..shapeEval import evalShape, shapeNode, nodeGraphToObj, DictShape, ListShape, TupleShape
+from ..shapeEval import evalShape, ShapeNode, nodeGraphToObj, DictShape, ListShape, TupleShape
 from ..quicklog import tracelog, log
 import json
 from types import SimpleNamespace
@@ -8,19 +8,19 @@ from .testBase import getCivitaiSample
 
 @tracelog("test_shapeNode")
 def test_shapeNode():
-  main = shapeNode({})
-  foo = main.addChild(shapeNode(containerType="foo"))
-  foo.addChild(shapeNode(value="str"))
+  main = ShapeNode({})
+  foo = main.addChild(ShapeNode(containerType="foo"))
+  foo.addChild(ShapeNode(value="str"))
 
   r = nodeGraphToObj(main)
   assert r == {"foo": "str"}
 
 @tracelog("test_shapeNode2")
 def test_shapeNode2():
-  main = shapeNode({})
-  foo = main.addChild(shapeNode(containerType="foo"))
-  foo.addChild(shapeNode(value="str"))
-  foo.addChild(shapeNode(value="int"))
+  main = ShapeNode({})
+  foo = main.addChild(ShapeNode(containerType="foo"))
+  foo.addChild(ShapeNode(value="str"))
+  foo.addChild(ShapeNode(value="int"))
 
   r = nodeGraphToObj(main)
 
