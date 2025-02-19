@@ -1,6 +1,6 @@
 import json
 from types import SimpleNamespace
-from .sample import sampleData_huggingFace
+from .huggingFaceSample import sampleData_huggingFace
 from .civitaiSample import civitaiStr
 
 def jsonToObj(jsonStr):
