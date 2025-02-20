@@ -1,38 +1,52 @@
 from ..quicklog import tracelog
+from ..composable import Composable
 from ..extensions import Api as f
+
+@tracelog("test_partial_1_param_func")
+def test_partial_1_param_func():
+  cat1 = f(lambda x: "0" + x)
+  get = cat1 & "1"
+  assert isinstance(get, Composable)
+  assert get() == "01"
 
 @tracelog("test_partial_2_param_func")
 def test_partial_2_param_func():
-  quad = f(lambda x: (x ** 2) + (8 * x) + 12)
-  domain = [1, 2, 3, 4, 5]
-  fmap = f(map)
-  flist = f(list)
+  cat2 = f(lambda a, b: "0" + a + b)
+  get1 = cat2 & "1"
+  assert get1("2") == "012"
 
-  comp = fmap & quad | flist
-  r = comp(domain)
-  assert r == [21, 32, 45, 60, 77]
+  get2 = get1 & "2"
+  assert get2() == "012"
 
+  get = cat2 & "1" & "2"
+  assert get() == "012"
 
 @tracelog("test_partial_3_param_func")
 def test_partial_multi_param_func():
-  mf = f(lambda xfilter, mapper, data: list(filter(xfilter, map(mapper, data))))
-  square = f(lambda x: x ** 2)
-  isEven = f(lambda x: x % 2 == 0)
+  cat3 = f(lambda a, b, c: "0" + a + b + c)
+  get1 = cat3 & "1"
+  assert get1("2", "3") == "0123"
 
-  comp = mf & isEven & square
+  get2 = cat3 & "1" & "2"
+  assert get2("3") == "0123"
 
-  assert comp([1, 2, 3, 4, 5]) == [4, 16]
+  get3 = cat3 & "1" & "2" & "3"
+  assert get3() == "0123"
 
-@tracelog("test_partial_multi_param_funcs_value_binding")
-def test_partial_multi_param_funcs_value_binding():
-  mathx = f(lambda a, b, c, d: (a * b) / (c + d))
-  comp = mathx & 2 & 5 & 1
-  assert comp(1) == 5
-  assert comp(9) == 1
+@tracelog("test_partial_3_param_func_curried")
+def test_partial_multi_param_func():
 
-@tracelog("test_partial_map")
-def test_partial_map():
-  cmap = f(map)
-  square = lambda x: x ** 2
-  comp = cmap & square
-  assert list(comp([1, 2, 3])) == [1, 4, 9]
+  #this test demonstrates that when functions are already curried, they are not within the composable's domain
+  
+  cat3 = f(lambda a: lambda b: lambda c: "0" + a + b + c)
+  get1 = cat3("1")
+  assert get1("2")("3") == "0123"
+
+  #NOT composable!
+  assert not isinstance(get1, Composable)
+
+  get2 = cat3("1")("2")
+  assert get2("3") == "0123"
+
+  get3 = cat3("1")("2")("3")
+  assert get3 == "0123"
