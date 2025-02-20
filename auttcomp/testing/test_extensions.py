@@ -1,4 +1,3 @@
-from ..composable import enableLogging
 from ..extensions import Api
 from .testBase import getHuggingFaceSample
 from ..quicklog import tracelog, log

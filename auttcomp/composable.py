@@ -1,8 +1,5 @@
 from typing import Callable, Optional
 import inspect
-from .quicklog import log
-
-enableLogging = False
 
 class Composable:
 
@@ -12,67 +9,58 @@ class Composable:
     self.g = None
     self.__chained = False
 
-  def __log(self, message):
-    if enableLogging:
-      log(f"DEBUG {self.__hash__()} {message}")
+  @staticmethod
+  def __invokeNative(func, args):
+    result = func(*args)
+    #todo op comparison
+    if type(result) not in [type((1,)), type(None)]: result = (result,)
+    return result
 
-  def __isChained(self, target) -> Optional[bool]:
+  @staticmethod
+  def __invokeCompose(func, args):
+    return func(*args) if args is not None else func()
+
+  @staticmethod
+  def __internal_call(f, g, args):
+    invokeF = Composable.__invokeCompose if isinstance(f, Composable) else Composable.__invokeNative
+    result = invokeF(f, args)
+    
+    if g is not None:
+      invokeG = Composable.__invokeCompose if isinstance(g, Composable) else Composable.__invokeNative
+      result = invokeG(g, result)
+
+    return result
+
+  @staticmethod
+  def __isChained(target) -> Optional[bool]:
     if target is None: return None
     if not isinstance(target, Composable): return None
     return target.__chained
 
-  def __invokeNative(self, func, name, args):
-    self.__log(f"START FUNCTION ----------------- {args} isData: {self.__isData}")
-    if self.__isData: return (self.f,)
-    log(f"func: {func}")
-    r = func(*args)
-    if type(r) not in [type((1,)), type(None)]: r = (r,)
-    self.__log(f"END FUNCTION   ----------------- {args} ->  isData: {self.__isData} r: {r}")
-    return r
-  
-  def __invokeCompose(self, func, name, args):
-    r = func(*args) if args is not None else func()
-    return r
-  
-  def __internal_call(self, args):
-    #self.__log(f"START __internal_call ----------------- {args} isData: {self.isData}")
-    invokeF = self.__invokeCompose if isinstance(self.f, Composable) else self.__invokeNative
-    result = invokeF(self.f, "f", args)
-    
-    if self.g is not None:
-      invokeG = self.__invokeCompose if isinstance(self.g, Composable) else self.__invokeNative
-      result = invokeG(self.g, "g", result)
-
-    #self.__log(f"END __internal_call ----------------- {args} isData: {self.isData}")
-    return result
-    
-  def __getChainState(self):
-      terminatingUnchained = not self.__chained and self.__isChained(self.f) == None and self.__isChained(self.g) == None
-      terminatingChain = not self.__chained and self.__isChained(self.g)
-      return (terminatingUnchained, terminatingChain)
+  @staticmethod
+  def __isTerminating(f, g):
+      gChainState = Composable.__isChained(g)
+      if gChainState: return True
+      return Composable.__isChained(f) is None and gChainState is None #is unchained
     
   def __call__(self, *args):
-    try:
-      r = self.__internal_call(args)
-      (terminatingUnchained, terminatingChain) = self.__getChainState()
-      isSingleTuple = type(r) == type((1,)) and len(r) == 1
-      shouldUnpackResult = (terminatingChain or terminatingUnchained) and isSingleTuple
-      
-      if shouldUnpackResult:
-        r = r[0]
+    if self.__isData: return self.f
 
-      return r
-    except Exception as inst:
-      self.__log(f"EXCEPTION -------- {type(inst)} {inst} ARGS {args}")
-      raise inst
+    result = Composable.__internal_call(self.f, self.g, args)
+    isSingleTuple = type(result) == tuple and len(result) == 1
+    isTerminating = not self.__chained and Composable.__isTerminating(self.f, self.g)
+    shouldUnpackResult = isTerminating and isSingleTuple
+
+    if shouldUnpackResult:
+      result = result[0]
+
+    return result
 
   @staticmethod
   def __internalFactory(func): return Composable(func)
 
-  #composition    
+  #composition operator
   def __or__(self, other):
-    self.__log(f"__or__::: self {type(self)} other {type(other)}")
-    
     if not isinstance(other, Composable): other = Composable.__internalFactory(other)
 
     newComp = Composable.__internalFactory(self)
@@ -86,13 +74,14 @@ class Composable:
 
     return newComp
 
-  def __getParamCount(self, func):
-    if isinstance(func, Composable): return self.__getParamCount(func.f)
-    finsp = func
-    if inspect.isclass(func): finsp = func.__call__
-    return len(inspect.signature(finsp).parameters)
-    
-  def __curry_inline(self, fleft, fright, argCount):
+  @staticmethod
+  def __getParamCount(func):
+    if isinstance(func, Composable): return Composable.__getParamCount(func.f)
+    if inspect.isclass(func): return len(inspect.signature(func.__call__).parameters)
+    return len(inspect.signature(func).parameters)
+
+  @staticmethod
+  def __curry_inline(fleft, fright, argCount):
     match argCount:
       case 2: return Composable.__internalFactory(lambda x: fleft(fright, x))
       case 3: return Composable.__internalFactory(lambda x1, x2: fleft(fright, x1, x2))
@@ -103,7 +92,7 @@ class Composable:
       case 8: return Composable.__internalFactory(lambda x1, x2, x3, x4, x5, x6, x7: fleft(fright, x1, x2, x3, x4, x5, x6, x7))
       case _: raise f"unsupported argument count {argCount}"
         
-  #partial application
+  #partial application operator
   def __and__(self, other):
     selfArgCount = self.__getParamCount(self)
     assumeNested = selfArgCount == 1
@@ -112,6 +101,7 @@ class Composable:
       return Composable.__internalFactory(lambda x: self(other)(x))
     return self.__curry_inline(self, other, selfArgCount)
 
+  #invocation operator
   def __lt__(self, other):
     data = other.f
     nextFunc = self

@@ -11,7 +11,7 @@ f = Composable
 
 def at(func):
   def atPart(obj):
-      return func(normalize(obj))
+    return func(normalize(obj))
   return f(atPart)
 
 def curriedSelect(func):
