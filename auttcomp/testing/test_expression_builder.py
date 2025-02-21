@@ -1,8 +1,8 @@
 from ..extensions import Api as f
-from .testBase import getHuggingFaceSample
+from .base_test import get_hugging_face_sample
 from ..quicklog import tracelog
 
-data = getHuggingFaceSample()
+data = get_hugging_face_sample()
 
 #NOTE - experimental work in progress
 

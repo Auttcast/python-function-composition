@@ -55,10 +55,10 @@ def test_partial_multi_param_func():
 
 @tracelog("test_partial_on_no_param_throws")
 def test_partial_on_no_param_throws():
-  zeroParamFunc = f(lambda: "hi")
-  hasThrown = False
+  zero_param_func = f(lambda: "hi")
+  has_thrown = False
   try:
-    zeroParamFunc & "1"
+    zero_param_func & "1"
   except TypeError:
-    hasThrown = True
-  assert hasThrown
+    has_thrown = True
+  assert has_thrown

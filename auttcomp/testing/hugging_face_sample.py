@@ -1,5 +1,4 @@
-
-sampleData_huggingFace = '''
+sample_data_hugging_face = '''
 {
 	"activeFilters": {
 		"pipeline_tag": [],

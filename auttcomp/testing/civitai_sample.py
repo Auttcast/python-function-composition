@@ -1,4 +1,4 @@
-civitaiStr = '''{
+civitai_str = '''{
   "result": {
     "data": {
       "json": {

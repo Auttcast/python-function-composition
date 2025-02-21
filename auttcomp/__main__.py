@@ -1,4 +1,4 @@
 from .extensions import Api as f
-from .testing.testBase import getHuggingFaceSample
+from .testing.base_test import get_hugging_face_sample
 
-data = getHuggingFaceSample()
+data = get_hugging_face_sample()

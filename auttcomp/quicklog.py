@@ -18,31 +18,31 @@ def source(frame):
   else:
     return f"global"
 
-def logFactory(enabled, prefix=""):
+def log_factory(enabled, prefix=""):
   def invoke(message):
     if enabled:
-      sourceClass = source(sys._getframe())
-      scm = f"[{ sourceClass }]"
-      bold = f"{ConsoleColor.BOLD}" if sourceClass == "global" else ""
-      wholePrefix = f"{ConsoleColor.CYAN}{prefix} {bold}{scm}".ljust(30, " ")
+      source_class = source(sys._getframe())
+      scm = f"[{ source_class }]"
+      bold = f"{ConsoleColor.BOLD}" if source_class == "global" else ""
+      whole_prefix = f"{ConsoleColor.CYAN}{prefix} {bold}{scm}".ljust(30, " ")
       col = ConsoleColor.CYAN + bold
-      print(f"\n{col}{wholePrefix}{len(col) * " "} > {ConsoleColor.END} {str(message)}", end="")
+      print(f"\n{col}{whole_prefix}{len(col) * " "} > {ConsoleColor.END} {str(message)}", end="")
   return invoke
 
-logProxy = logFactory(False)
+logProxy = log_factory(False)
 
 def log(message):
   logProxy(message)
 
 def tracelog(prefix, enable=False):
-  def funcWrap(func):
-    def loggingWrapper(*args, **kargs):
+  def func_wrap(func):
+    def logging_wrapper(*args, **kargs):
       global logProxy
-      logProxy = logFactory(enable, prefix)
+      logProxy = log_factory(enable, prefix)
       logProxy(f"{ConsoleColor.GREEN}START{ConsoleColor.END}")
       try:
         func(*args, **kargs)
       finally:
         logProxy(f"{ConsoleColor.GREEN}END{ConsoleColor.END}")
-    return loggingWrapper
-  return funcWrap
+    return logging_wrapper
+  return func_wrap

@@ -1,123 +1,125 @@
 from .utility import normalize, ObjUtil
-from .shapeEval import evalShape, DictShape, ListShape, TupleShape, StrShape
+from .shape_eval import eval_shape, DictShape, ListShape, TupleShape, StrShape
 from .composable import Composable
 from typing import Callable, Any, Tuple, Iterable, Dict, Optional, Union, TypeVar
 from types import SimpleNamespace
-import functools, collections.abc, itertools
-from .expressionBuilder import ExpressionExecutor
+from .expression_builder import ExpressionExecutor
 from .quicklog import log
+import functools
+import collections.abc
+import itertools
 
 f = Composable
 
-def curriedAt(func):
-  def partialAt(obj):
+def curried_at(func):
+  def partial_at(obj):
     return func(normalize(obj))
-  return f(partialAt)
+  return f(partial_at)
 
-def curriedSelect(func):
+def curried_select(func):
   exp = ExpressionExecutor(func)
-  def partialSelect(obj):
+  def partial_select(obj):
     return exp(normalize(obj))
-  return f(partialSelect)
+  return f(partial_select)
 
-def curriedMap(func):
-  def partialMap(data):
+def curried_map(func):
+  def partial_map(data):
     return map(lambda x: func(normalize(x)), data)
-  return f(partialMap)
+  return f(partial_map)
 
-def curriedForeach(func):
-  def partialForeach(data):
+def curried_foreach(func):
+  def partial_foreach(data):
     for x in data:
       func(normalize(x))
-  return f(partialForeach)
+  return f(partial_foreach)
 
-def curriedFilter(func):
-  def partialFilter(data):
+def curried_filter(func):
+  def partial_filter(data):
     return filter(lambda x: func(normalize(x)), data)
-  return f(partialFilter)
+  return f(partial_filter)
 
-def curriedReduce(func):
-  def partialReduce(data):
+def curried_reduce(func):
+  def partial_reduce(data):
     return functools.reduce(func, data)
-  return f(partialReduce)
+  return f(partial_reduce)
 
-def curriedReduce2(func, initial):
-  def partialReduce(data):
+def curried_reduce2(func, initial):
+  def partial_reduce(data):
     return functools.reduce(func, data, initial)
-  return f(partialReduce)
+  return f(partial_reduce)
 
-def curriedFlatmap(func):
-  def partialFlatmap(data):
+def curried_flatmap(func):
+  def partial_flatmap(data):
     for ys in map(lambda x: func(normalize(x)), data):
       for y in ys:
         yield y
-  return f(partialFlatmap)
+  return f(partial_flatmap)
 
-def curriedAny(func):
-  def curriedAny(data):
+def curried_any(func):
+  def curried_any(data):
     return any(map(lambda x: func(normalize(x)), data))
-  return f(curriedAny)
+  return f(curried_any)
 
-def curriedAll(func):
-  def partialAll(data):
+def curried_all(func):
+  def partial_all(data):
     return all(map(lambda x: func(normalize(x)), data))
-  return f(partialAll)
+  return f(partial_all)
 
-def partialSort(data):
-  return sorted(ObjUtil.execGenerator(data))
+def partial_sort(data):
+  return sorted(ObjUtil.exec_generator(data))
 
-def curriedSortby(func):
-  def partialSortby(data):
-    return sorted(ObjUtil.execGenerator(data), key=func)
-  return f(partialSortby)
+def curried_sortby(func):
+  def partial_sortby(data):
+    return sorted(ObjUtil.exec_generator(data), key=func)
+  return f(partial_sortby)
 
-def curriedSortbyDescending(func):
-  def partialSortbyDescending(data):
-    return sorted(ObjUtil.execGenerator(data), key=func, reverse=True)
-  return f(partialSortbyDescending)
+def curried_sortby_descending(func):
+  def partial_sortby_descending(data):
+    return sorted(ObjUtil.exec_generator(data), key=func, reverse=True)
+  return f(partial_sortby_descending)
 
-def curriedTake(count):
-  def partialTake(data):
-    iterCount = 0
+def curried_take(count):
+  def partial_take(data):
+    iter_count = 0
     for x in data:
-      iterCount += 1
-      if iterCount > count:
+      iter_count += 1
+      if iter_count > count:
         break
       yield x
-  return f(partialTake)
+  return f(partial_take)
 
-def curriedSkip(skipCount):
-  def partialSkip(data):
-    iterCount = 0
+def curried_skip(skip_count):
+  def partial_skip(data):
+    iter_count = 0
     for x in data:
-      iterCount += 1
-      if iterCount > skipCount:
+      iter_count += 1
+      if iter_count > skip_count:
         yield x
-  return f(partialSkip)
+  return f(partial_skip)
 
-def curriedGroup(func):
-  def partialGroup(data):
-    for key, value in itertools.groupby(sorted(ObjUtil.execGenerator(data), key=func, reverse=True), key=func):
-      yield SimpleNamespace(**{"key": key, "value": ObjUtil.execGenerator(value)})
-  return f(partialGroup)
+def curried_group(func):
+  def partial_group(data):
+    for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=func, reverse=True), key=func):
+      yield SimpleNamespace(**{"key": key, "value": ObjUtil.exec_generator(value)})
+  return f(partial_group)
 
-def curriedInnerJoin(leftData, leftKeyFunc, rightKeyFunc, leftValueSelector=None, rightValueSelector=None):
-  if leftValueSelector is None: leftValueSelector = lambda x: x
-  if rightValueSelector is None: rightValueSelector = lambda x: x
+def curried_inner_join(left_data, left_key_func, right_key_func, left_value_selector=None, right_value_selector=None):
+  if left_value_selector is None: left_value_selector = lambda x: x
+  if right_value_selector is None: right_value_selector = lambda x: x
 
-  def partialInnerJoin(rightData):
-    leftGroup = curriedGroup(leftKeyFunc)(leftData)
-    rightGroup = curriedGroup(rightKeyFunc)(rightData)
+  def partial_inner_join(right_data):
+    left_group = curried_group(left_key_func)(left_data)
+    right_group = curried_group(right_key_func)(right_data)
 
     tracker = {}
-    for lg in leftGroup:
+    for lg in left_group:
       tracker[lg.key] = lg.value
-    for rg in rightGroup:
+    for rg in right_group:
       lv = tracker.get(rg.key)
       if lv is not None:
-        yield rg.key, (leftValueSelector(lv), rightValueSelector(rg.value))
+        yield rg.key, (left_value_selector(lv), right_value_selector(rg.value))
 
-  return f(partialInnerJoin)
+  return f(partial_inner_join)
 
 def tee(generator):
   _, g = itertools.tee(iter(generator))
@@ -200,8 +202,8 @@ class Api:
     pass
 
   @staticmethod
-  #def distinctSet(func:Callable[[T], Iterable[R]]) -> Callable[[T], Iterable[R]]:
-  def distinctSet(func):
+  #def distinct_set(func:Callable[[T], Iterable[R]]) -> Callable[[T], Iterable[R]]:
+  def distinct_set(func):
     '''implementation of distinct using python's set, but limited to qualifying primitive types'''
     pass
 
@@ -244,14 +246,14 @@ class Api:
     pass
 
   @staticmethod
-  #def sortBy(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
-  def sortBy(func):
+  #def sort_by(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
+  def sort_by(func):
     '''curried version of python's sort with key selector'''
     pass
 
   @staticmethod
-  #def sortByDescending(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
-  def sortByDescending(func):
+  #def sort_by_descending(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
+  def sort_by_descending(func):
     '''curried version of python's sort w/ key selector followed by reverse'''
     pass
 
@@ -278,11 +280,11 @@ class Api:
     pass
 
   @staticmethod
-  #def innerJoin(leftData:T, leftKeySelector:KeySelector, rightKeySelector:KeySelector, leftDataSelector:PropertySelector, rightDataSelector:PropertySelector) -> Callable[[T2], Iterable[Tuple[K, Tuple[T, T2]]]]:
-  def innerJoin(leftData, leftKeySelector, rightKeySelector, leftDataSelector, rightDataSelector):
+  #def inner_join(left_data:T, left_key_selector:KeySelector, right_keySelector:KeySelector, left_dataSelector:PropertySelector, right_dataSelector:PropertySelector) -> Callable[[T2], Iterable[Tuple[K, Tuple[T, T2]]]]:
+  def inner_join(left_data, left_key_selector, right_key_selector, left_data_selector, right_data_selector):
     '''combine two groups by key
-    f.innerJoin(leftData, leftKeySelector, rightKeySelector, leftDataSelector, rightDataSelector)
-    returns a tuple of (key, (leftData, rightData))
+    f.innerJoin(left_data, left_keySelector, right_keySelector, left_dataSelector, right_dataSelector)
+    returns a tuple of (key, (left_data, right_data))
     '''
     pass
 
@@ -299,29 +301,29 @@ class Api:
 # extDoc = getExtDoc()
 
 Api = f
-Api.at = Composable(curriedAt)
-Api.select = Composable(curriedSelect)
-Api.map = Composable(curriedMap)
-Api.foreach = Composable(curriedForeach)
-Api.filter = Composable(curriedFilter)
-Api.reduce = Composable(curriedReduce)
-Api.reduce2 = Composable(curriedReduce2)
+Api.at = Composable(curried_at)
+Api.select = Composable(curried_select)
+Api.map = Composable(curried_map)
+Api.foreach = Composable(curried_foreach)
+Api.filter = Composable(curried_filter)
+Api.reduce = Composable(curried_reduce)
+Api.reduce2 = Composable(curried_reduce2)
 Api.list = Composable(list)
 Api.distinct = Composable(lambda x: list(functools.reduce(lambda a, b: a+[b] if b not in a else a, x, [])))
-Api.distinctSet = Composable(lambda x: list(set(x)))
-Api.flatmap = Composable(curriedFlatmap)
-Api.flatmapid = Composable(curriedFlatmap)(lambda x: x)
-Api.shape = Composable(evalShape)
-Api.any = Composable(curriedAny)
-Api.all = Composable(curriedAll)
-Api.reverse = Composable(lambda x: reversed(ObjUtil.execGenerator(x)))
-Api.sort = Composable(partialSort)
-Api.sortBy = Composable(curriedSortby)
-Api.sortByDescending = Composable(curriedSortbyDescending)
-Api.take = Composable(curriedTake)
-Api.skip = Composable(curriedSkip)
-Api.group = Composable(curriedGroup)
-Api.innerJoin = Composable(curriedInnerJoin)
+Api.distinct_set = Composable(lambda x: list(set(x)))
+Api.flatmap = Composable(curried_flatmap)
+Api.flatmapid = Composable(curried_flatmap)(lambda x: x)
+Api.shape = Composable(eval_shape)
+Api.any = Composable(curried_any)
+Api.all = Composable(curried_all)
+Api.reverse = Composable(lambda x: reversed(ObjUtil.exec_generator(x)))
+Api.sort = Composable(partial_sort)
+Api.sort_by = Composable(curried_sortby)
+Api.sort_by_descending = Composable(curried_sortby_descending)
+Api.take = Composable(curried_take)
+Api.skip = Composable(curried_skip)
+Api.group = Composable(curried_group)
+Api.inner_join = Composable(curried_inner_join)
 Api.tee = Composable(tee)
 #
 # def updateExtDoc(doc):

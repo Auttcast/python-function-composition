@@ -8,13 +8,13 @@ def normalize(obj):
 
 class JsonUtil:
   @staticmethod
-  def toObject(jsonStr):
-    return json.loads(jsonStr, object_hook=lambda d: SimpleNamespace(**d))
+  def to_object(json_str):
+    return json.loads(json_str, object_hook=lambda d: SimpleNamespace(**d))
 
 class ObjUtil:
 
   @staticmethod
-  def execGenerator(gen):
+  def exec_generator(gen):
     if isinstance(gen, Iterable):
       return list(gen)
     else: return gen

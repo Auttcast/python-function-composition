@@ -30,8 +30,8 @@ def test_single_multi_param():
 
 @tracelog("test_multi_param")
 def test_multi_param():
-  incPass4 = incPass | incPass | incPass | incPass
-  (r0, r1) = incPass4(1, 1)
+  inc_pass4 = incPass | incPass | incPass | incPass
+  (r0, r1) = inc_pass4(1, 1)
   assert r0 == 5 and r1 == 5
 
 @tracelog("test_various_param")
@@ -51,27 +51,27 @@ def test_collections():
   pass3 = passthru | passthru | passthru
   assert pass3([1, 2, 3]) == [1, 2, 3]
 
-def rangeFactory(x):
+def range_factory(x):
   for i in range(1, x):
     yield i
 
 @tracelog("test_iterables")
 def test_iterables():
-  rf = f(rangeFactory)
+  rf = f(range_factory)
   evens = f(lambda r: filter(lambda x: x % 2 == 0, r))
-  toList = f(lambda r: list(r))
+  to_list = f(lambda r: list(r))
   avg = f(lambda r: sum(r) / len(r))
   
-  func = rf | evens | toList | avg
+  func = rf | evens | to_list | avg
   
   assert func(10) == 5
 
-def voidFunc():
+def void_func():
   log(f"not input, not output")
 
 @tracelog("test_void")
 def test_void():
-  vf = f(voidFunc)
+  vf = f(void_func)
   func = vf | vf | vf
   func()
   assert True, "does not throw"
@@ -80,9 +80,9 @@ def test_void():
 def test_dynamic_wrapping():
 
   #test_iterables without f-wrap
-  rf = f(rangeFactory)
+  rf = f(range_factory)
   evens = lambda r: filter(lambda x: x % 2 == 0, r)
-  toList = lambda r: list(r)
+  to_list = lambda r: list(r)
   avg = lambda r: sum(r) / len(r)  
-  func = rf | evens | toList | avg
+  func = rf | evens | to_list | avg
   assert func(10) == 5

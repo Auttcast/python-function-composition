@@ -55,12 +55,12 @@ When Composable receives a non-callable type, it constructs an identity function
 
 ```python
 from auttcomp.extensions import Api as f
-from auttcomp.testing.testBase import getHuggingFaceSample
+from auttcomp.testing.base_test import get_hugging_face_sample
 
-data = getHuggingFaceSample()
+data = get_hugging_face_sample()
 
-idFunc = f(data.models)
-justDataModelsAgain = idFunc()
+id_func = f(data.models)
+just_data_models_again = id_func()
 ```
 
 The data in this sample is a search result from the Hugging Face api. 
@@ -120,9 +120,9 @@ f(data.models) > f.map(lambda x: x.authorData) | f.map(lambda x: x.name) | list
 or even...
 
 ```python
-getAuthorData = lambda x: x.authorData
-getName = lambda x: x.name
-comp = f.map & getAuthorData | f.map & getName | list
+get_author_data = lambda x: x.authorData
+get_name = lambda x: x.name
+comp = f.map & get_author_data | f.map & get_name | list
 f(data.models) > comp
 ```
 
@@ -163,7 +163,7 @@ f(data.models) > f.group(lambda x: x.author) | list | f.shape
                  'widgetOutputUrls': ['str']}]}]
 ```
 
-Next, map to tuple of (key, sumDownloads)
+Next, map to tuple of (key, sum_downloads)
 
 ```python
 (
@@ -191,7 +191,7 @@ Finally, sort by descending downloads and take the top 5 results
     g.key,
     f(g.value) > f.map(lambda x: x.downloads) | sum
   ))
-  | f.sortByDescending(lambda x: x[1])
+  | f.sort_by_descending(lambda x: x[1])
   | f.take(5)
   | list
 )
