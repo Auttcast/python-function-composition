@@ -9,7 +9,7 @@ from .quicklog import log
 
 f = Composable
 
-def at(func):
+def curriedAt(func):
   def atPart(obj):
     return func(normalize(obj))
   return f(atPart)
@@ -46,18 +46,11 @@ def curriedReduce2(func, initial):
     return functools.reduce(func, data, initial)
   return f(partialReduce)
 
-def hasKey(key, obj):
-  return key in vars(obj).keys()
-
 def curriedFlatmap(func):
   def partialFlatmap(data):
     for ys in map(func, filter(lambda x: func(normalize(x)), data)):
-      if not isinstance(ys, collections.abc.Iterable):
-        #because either the field or it's container could be a collection
-        yield ys
-      else:
-        for y in ys:
-          yield y
+      for y in ys:
+        yield y
   return f(partialFlatmap)
 
 def curriedAny(func):
@@ -66,9 +59,9 @@ def curriedAny(func):
   return f(curriedAny)
 
 def curriedAll(func):
-  def curriedAll(data):
+  def partialAll(data):
     return all(map(lambda x: func(normalize(x)), data))
-  return f(curriedAll)
+  return f(partialAll)
 
 def partialSort(data):
   return sorted(ObjUtil.execGenerator(data))
@@ -306,7 +299,7 @@ class Api:
 # extDoc = getExtDoc()
 
 Api = f
-Api.at = Composable(at)
+Api.at = Composable(curriedAt)
 Api.select = Composable(curriedSelect)
 Api.map = Composable(curriedMap)
 Api.foreach = Composable(curriedForeach)
@@ -317,7 +310,7 @@ Api.list = Composable(list)
 Api.distinct = Composable(lambda x: list(functools.reduce(lambda a, b: a+[b] if b not in a else a, x, [])))
 Api.distinctSet = Composable(lambda x: list(set(x)))
 Api.flatmap = Composable(curriedFlatmap)
-Api.flatmapid = Composable(curriedFlatmap(lambda x: x))
+Api.flatmapid = Composable(curriedFlatmap)(lambda x: x)
 Api.shape = Composable(evalShape)
 Api.any = Composable(curriedAny)
 Api.all = Composable(curriedAll)

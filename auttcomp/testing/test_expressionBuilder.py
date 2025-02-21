@@ -15,3 +15,8 @@ def test_select_identity():
 def test_select():
   r = f(data) > f.select(lambda x: x.models.authorData.fullname) | list
   assert r == (f(data.models) > f.map(lambda x: x.authorData) | f.map(lambda x: x.fullname) | list)
+
+@tracelog("test_property_as_expression")
+def test_property_as_expression():
+  assert (f(data) > f.select(lambda x: x.models)) == (f(data) > f.at(lambda x: x.models))
+  assert (f(data) > f.select(lambda x: x.models.authorData)) == (f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.authorData) | list)

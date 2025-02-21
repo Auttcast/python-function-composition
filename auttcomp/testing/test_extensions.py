@@ -1,20 +1,16 @@
-from ..extensions import Api
+from ..extensions import Api as f
 from .testBase import getHuggingFaceSample
 from ..quicklog import tracelog, log
-
-f = Api
 
 data = getHuggingFaceSample()
 
 @tracelog("test_at")
 def test_at():
   sr = f(data) > f.shape | f.at(lambda x: x.models)
-  log('test123')
   assert "author" in sr[0].keys()
 
 @tracelog("test_map")
 def test_map():
-  log('test456')
   r1 = f(data) > f.shape | f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
   assert r1 == ['str']
 
@@ -44,6 +40,12 @@ def test_flatmap():
                | f.flatmap(lambda x: x.widgetOutputUrls)
                | list)
   assert dataQuery == ['foo', 'foo1', 'foo2', 'foo2']
+
+@tracelog("test_flatmapid")
+def test_flatmapid():
+  arr = [[1]]*3
+  res = f(arr) > f.flatmapid | list
+  assert res == [1, 1, 1]
 
 @tracelog("test_reverse")
 def test_reverse():
@@ -84,7 +86,6 @@ def test_take():
 @tracelog("test_skip")
 def test_skip():
   dist = f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | list
-  log("dist")
   dataQuery = f(dist) > f.skip(3) | f.list
   assert len(dataQuery) == len(dist[3:])
   assert dataQuery == dist[3:]
@@ -123,13 +124,13 @@ def test_join():
       | list
   )
 
-  def selectManyLikes(arr):
-    return f(arr) > f.flatmap(lambda x: x.likes) | sum
+  def sumManyLikes(arr):
+    return f(arr) > f.map(lambda x: x.likes) | sum
 
   likesByAuthor = (
     f(groupByAuthor)
     > f.tee
-    | f.map(lambda g: (g.key, selectManyLikes(g.value)))
+    | f.map(lambda g: (g.key, sumManyLikes(g.value)))
     | list
   )
 
@@ -151,9 +152,3 @@ def test_distinctSet():
   fastDistinct = data > f.distinctSet
   assert slowDistinct == fastDistinct
 
-
-@tracelog("test_property_as_expression")
-def test_property_as_expression():
-
-  assert (f(data) > f.select(lambda x: x.models)) == (f(data) > f.at(lambda x: x.models))
-  assert (f(data) > f.select(lambda x: x.models.authorData)) == (f(data) > f.at(lambda x: x.models) | f.map(lambda x: x.authorData) | list)
