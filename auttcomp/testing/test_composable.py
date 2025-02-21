@@ -20,8 +20,8 @@ def test_basic_comp():
 
 @tracelog("test_long_comp")
 def test_long_comp():
-  inc5 = inc | inc | inc | inc
-  assert inc5(1) == 5
+  inc4 = inc | inc | inc | inc
+  assert inc4(1) == 5
 
 @tracelog("test_single_multi_param")
 def test_single_multi_param():
@@ -45,15 +45,15 @@ def test_inverse_mixmatch():
   assert func(3, 3) == 3
   func2 = power | splitNum | incPass | f(lambda x,y: (x/2) + (x/2)) | withStr | strLen
   assert func2(4, 4) == 5
-  
+
+@tracelog("test_collections")
+def test_collections():
+  pass3 = passthru | passthru | passthru
+  assert pass3([1, 2, 3]) == [1, 2, 3]
+
 def rangeFactory(x):
   for i in range(1, x):
     yield i
-  
-@tracelog("test_collections")
-def test_collections():
-  pass2 = passthru | passthru | passthru
-  assert pass2([1, 2, 3]) == [1, 2, 3]
 
 @tracelog("test_iterables")
 def test_iterables():

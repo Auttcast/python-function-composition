@@ -122,7 +122,7 @@ def curriedInnerJoin(leftData, leftKeyFunc, rightKeyFunc, leftValueSelector=None
     for rg in rightGroup:
       lv = tracker.get(rg.key)
       if lv is not None:
-        yield (rg.key, (leftValueSelector(lv), rightValueSelector(rg.value)))
+        yield rg.key, (leftValueSelector(lv), rightValueSelector(rg.value))
 
   return f(partialInnerJoin)
 

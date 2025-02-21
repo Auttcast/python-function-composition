@@ -3,6 +3,8 @@ from typing import Iterable
 
 printTracking = True
 
+#NOTE - experimental work in progress
+
 class Ghost(object):
   def __init__(self):
     super().__init__()

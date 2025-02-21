@@ -4,6 +4,8 @@ from ..quicklog import tracelog
 
 data = getHuggingFaceSample()
 
+#NOTE - experimental work in progress
+
 @tracelog("test_select_identity")
 def test_select_identity():
   r = f(data) > f.select(lambda x: x) | list

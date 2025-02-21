@@ -2,15 +2,7 @@ import json
 from types import SimpleNamespace
 from typing import Iterable
 
-concreteIterableTypes = [set, list]
-
-def isListType(obj):
-  if not isinstance(obj, Iterable): return False
-  return any(list(map(lambda x: isinstance(obj, x), concreteIterableTypes)))
-
 def normalize(obj):
-  if isListType(obj): return obj
-  if isinstance(obj, SimpleNamespace): return obj
   if isinstance(obj, dict): return SimpleNamespace(**obj)
   return obj
 
