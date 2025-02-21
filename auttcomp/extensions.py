@@ -10,9 +10,9 @@ from .quicklog import log
 f = Composable
 
 def curriedAt(func):
-  def atPart(obj):
+  def partialAt(obj):
     return func(normalize(obj))
-  return f(atPart)
+  return f(partialAt)
 
 def curriedSelect(func):
   exp = ExpressionExecutor(func)
@@ -48,7 +48,7 @@ def curriedReduce2(func, initial):
 
 def curriedFlatmap(func):
   def partialFlatmap(data):
-    for ys in map(func, filter(lambda x: func(normalize(x)), data)):
+    for ys in map(lambda x: func(normalize(x)), data):
       for y in ys:
         yield y
   return f(partialFlatmap)

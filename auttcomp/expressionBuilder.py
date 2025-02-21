@@ -5,9 +5,8 @@ printTracking = True
 
 #NOTE - experimental work in progress
 
-class Ghost(object):
+class Ghost:
   def __init__(self):
-    super().__init__()
     self.tracking = []
 
   def __getattr__(self, name):

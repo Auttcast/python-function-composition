@@ -36,7 +36,7 @@ def test_reduce():
 @tracelog("test_flatmap")
 def test_flatmap():
   dataQuery = (f(data) > f.at(lambda x: x.models)
-               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls != None)
+               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls is not None)
                | f.flatmap(lambda x: x.widgetOutputUrls)
                | list)
   assert dataQuery == ['foo', 'foo1', 'foo2', 'foo2']
@@ -50,7 +50,7 @@ def test_flatmapid():
 @tracelog("test_reverse")
 def test_reverse():
   dataQuery = (f(data) > f.at(lambda x: x.models)
-               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls != None)
+               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls is not None)
                | f.flatmap(lambda x: x.widgetOutputUrls)
                | f.reverse
                | list)
@@ -59,7 +59,7 @@ def test_reverse():
 @tracelog("test_any")
 def test_any():
   dataQuery = (f(data) > f.at(lambda x: x.models)
-               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls != None)
+               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls is not None)
                | f.flatmap(lambda x: x.widgetOutputUrls)
                | f.any(lambda x: "1" in x))
   assert dataQuery
@@ -67,7 +67,7 @@ def test_any():
 @tracelog("test_all")
 def test_all():
   dataQuery = (f(data) > f.at(lambda x: x.models)
-               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls != None)
+               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls is not None)
                | f.flatmap(lambda x: x.widgetOutputUrls)
                | f.all(lambda x: "oo" in x))
   assert dataQuery

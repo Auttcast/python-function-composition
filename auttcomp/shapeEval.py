@@ -1,10 +1,6 @@
 from typing import Union, Self, Any
 import sys, pprint
 import io
-from .quicklog import log
-
-enableShapeLogging = False
-
 
 class ShapeNode:
   def __init__(self, containerType: Union[list|dict|str|tuple|None]=None, value:str=None, parent=None):
@@ -192,8 +188,6 @@ class BaseShape:
     ssLen = ss.tell()
     ss.seek(0)
     dataStr = ss.read(ssLen - 1)
-    if enableShapeLogging:
-      print(dataStr)
     return dataStr
 
   @staticmethod
