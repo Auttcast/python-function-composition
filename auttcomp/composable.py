@@ -93,7 +93,7 @@ class Composable:
         case 6: return Composable(lambda x1, x2, x3, x4, x5: func(param, x1, x2, x3, x4, x5))
         case 7: return Composable(lambda x1, x2, x3, x4, x5, x6: func(param, x1, x2, x3, x4, x5, x6))
         case 8: return Composable(lambda x1, x2, x3, x4, x5, x6, x7: func(param, x1, x2, x3, x4, x5, x6, x7))
-        case _: raise f"unsupported argument count {argCount}"
+        case _: raise TypeError(f"unsupported argument count {argCount}")
 
     @staticmethod
     def __getParamCount(func):

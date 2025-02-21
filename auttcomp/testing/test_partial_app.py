@@ -37,7 +37,7 @@ def test_partial_multi_param_func():
 def test_partial_multi_param_func():
 
   #this test demonstrates that when functions are already curried, they are not within the composable's domain
-  
+
   cat3 = f(lambda a: lambda b: lambda c: "0" + a + b + c)
   get1 = cat3("1")
   assert get1("2")("3") == "0123"
@@ -50,3 +50,15 @@ def test_partial_multi_param_func():
 
   get3 = cat3("1")("2")("3")
   assert get3 == "0123"
+
+#failure cases
+
+@tracelog("test_partial_on_no_param_throws")
+def test_partial_on_no_param_throws():
+  zeroParamFunc = f(lambda: "hi")
+  hasThrown = False
+  try:
+    zeroParamFunc & "1"
+  except TypeError:
+    hasThrown = True
+  assert hasThrown
