@@ -1,7 +1,7 @@
 from typing import Callable, Optional
 import inspect
 
-_INV_R_TYPE_PACK = [type((1,)), type(None)]
+_INV_R_TYPE_PACK = {type((1,)), type(None)}
 
 class Composable:
 
