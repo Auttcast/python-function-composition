@@ -11,7 +11,6 @@ def test_shape_node():
   main = ShapeNode({})
   foo = main.add_child(ShapeNode(container_type="foo"))
   foo.add_child(ShapeNode(value="str"))
-
   r = node_graph_to_obj(main)
   assert r == {"foo": "str"}
 
@@ -21,13 +20,8 @@ def test_shape_node2():
   foo = main.add_child(ShapeNode(container_type="foo"))
   foo.add_child(ShapeNode(value="str"))
   foo.add_child(ShapeNode(value="int"))
-
   r = node_graph_to_obj(main)
-
-  #something non-deterministic is happening, not worth debugging yet....
-  c1 = r == {"foo": "int|str"}
-  c2 = r == {"foo": "str|int"}
-  assert c1 or c2
+  assert r == {"foo": "str|int"}
 
 @tracelog("test_eval_shape_prim")
 def test_eval_shape_prim():
@@ -111,7 +105,6 @@ def test_eval_shape_dict3():
   """
 
   json_obj = json.loads(json_str, object_hook=lambda d: SimpleNamespace(**d))
-
   s = eval_shape(json_obj)
   assert s == {"l1": {"l2p1": ['int'], "l2p2": ["str"]}}
 
@@ -136,24 +129,14 @@ def test_shape_eval_get_attr_returns_shape():
   assert isinstance(s, DictShape)
   assert isinstance(s.l2p1, ListShape)
 
-  #SysUtil.enableTracing(filterFunc=lambda x: "shapeEval" in x.meta.file, mapFunc=lambda x: (x.func, x.args))
   s1 = s.l2p1[0]
   assert isinstance(s1, TupleShape), f"the shape is {type(s1)}"
-  #SysUtil.disableTracing()
-
-@tracelog("test_complex_obj_civitai")
-def test_complex_obj_civitai():
-  obj = get_civitai_sample()
-  res = f(obj.result.data.json.collection) > f.shape
-  log(res)
-  #does not throw
 
 @tracelog("test_tuple_with_list")
 def test_tuple_with_list():
   tup = namedtuple("mytup", ["a", "b", "c"])
   t1 = tup(1, 2, [1])
   sh = eval_shape(t1)
-  log(type(sh))
   assert sh == ('int', 'int', ['int'])
 
 @tracelog("test_tuple_with_dict")
@@ -181,16 +164,18 @@ def test_tuple_with_dupes_arr():
 def test_dict_sometimes_null():
   d1 = {"val": 1, "nested": {"n1": 2}}
   d2 = {"val": 1, "nested": None}
-
   s = eval_shape([d1, d2])
-  log(s)
   assert s == [{"val": "int", "nested?": {"n1": "int"}}]
 
 @tracelog("test_dict_only_null_props")
 def test_dict_only_null_props():
   d1 = {"val": 1, "nested": None}
   d2 = {"val": 1, "nested": None}
-
   s = eval_shape([d1, d2])
-  log(s)
   assert s == [{"val": "int", "nested?": "None"}]
+
+@tracelog("test_complex_obj_civitai")
+def test_complex_obj_civitai():
+  obj = get_civitai_sample()
+  f(obj.result.data.json.collection) > f.shape
+  #does not throw

@@ -135,7 +135,7 @@ def test_join():
   )
 
   key_select = lambda x: x[0]
-  j = (f(res_count_by_author) > f.inner_join(
+  join = (f(res_count_by_author) > f.inner_join(
       likes_by_author,
       key_select,
       key_select,
@@ -143,7 +143,7 @@ def test_join():
       lambda r: r[0][1]
   ) | list)
 
-  assert j == [('deepseek-ai', (14027, 12)), ('bytedance-research', (221, 2)), ('Qwen', (596, 4))]
+  assert join == [('deepseek-ai', (14027, 12)), ('bytedance-research', (221, 2)), ('Qwen', (596, 4))]
 
 @tracelog("test_distinct_set")
 def test_distinct_set():

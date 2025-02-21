@@ -51,8 +51,6 @@ def test_partial_multi_param_func():
   get3 = cat3("1")("2")("3")
   assert get3 == "0123"
 
-#failure cases
-
 @tracelog("test_partial_on_no_param_throws")
 def test_partial_on_no_param_throws():
   zero_param_func = f(lambda: "hi")
