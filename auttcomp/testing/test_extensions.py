@@ -4,6 +4,7 @@ from ..quicklog import tracelog, log
 
 data = get_hugging_face_sample()
 
+
 @tracelog("test_at")
 def test_at():
   sr = f.id(data) > f.shape | f.at(lambda x: x.models)

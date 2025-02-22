@@ -4,6 +4,7 @@ from .shape_eval import eval_shape
 from .composable import Composable, P, R
 from typing import Callable, Any, Tuple, Iterable, TypeVar, Generic
 from .expression_builder import ExpressionExecutor
+from typing import Callable
 import functools
 import itertools
 
@@ -11,17 +12,13 @@ T = TypeVar('T')
 T2 = TypeVar('T2')
 K = TypeVar('K')
 
+def comp_wrapper(func:Callable[P, R]) -> Composable[P, R]:
+  return Composable(func)
+
 class KeyValue(Generic[K, T]):
   def __init__(self, key: K, value: T):
     self.key: K = key
     self.value: T = value
-
-KeySelector = Callable[[T], K]
-
-
-def comp_wrapper(func:Callable[P, R]) -> Composable[P, R]:
-  return Composable(func)
-
 
 class Api(Composable[P, R]):
 
