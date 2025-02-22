@@ -1,14 +1,8 @@
-from typing import Callable
 from ..extensions import Api as f
 from .base_test import get_hugging_face_sample
 from ..quicklog import tracelog, log
 
 data = get_hugging_face_sample()
-
-def test_foo():
-  inc_l:Callable[[int], int] = lambda x: x+1
-  inc = f(inc_l)
-  inc()
 
 @tracelog("test_at")
 def test_at():
@@ -30,7 +24,7 @@ def test_author_query():
 
 @tracelog("test_filter")
 def test_filter():
-  data_query = f.id(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | f.filter(lambda x: "deep" in x)| list
+  data_query = f.id(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | f.filter(lambda x: "deep" in x) | list
   assert data_query == ["deepseek-ai"]
 
 @tracelog("test_reduce")
@@ -142,6 +136,7 @@ def test_join():
   )
 
   key_select = lambda x: x[0]
+  
   join = (f.id(res_count_by_author) > f.inner_join(
       likes_by_author,
       key_select,

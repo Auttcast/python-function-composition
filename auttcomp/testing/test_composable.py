@@ -1,9 +1,11 @@
-from typing import Callable
 from ..quicklog import tracelog, log
 from ..composable import Composable as f
 
-inc_lam:Callable[[int], int] = lambda x: x+1
-inc = f(inc_lam)
+#to examine support for type hinting
+def increment(value:int) -> int:
+  return value + 1
+
+inc = f(increment)
 incPass = f(lambda x,y: (x+1, y+1))
 power = f(lambda x,y: x**y)
 splitNum = f(lambda x: (x/2, x/2))

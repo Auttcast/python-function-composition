@@ -1,4 +1,5 @@
-from ..quicklog import tracelog
+from typing import Callable
+from ..quicklog import tracelog, log
 from ..composable import Composable
 from ..extensions import Api as f
 
@@ -11,7 +12,8 @@ def test_partial_1_param_func():
 
 @tracelog("test_partial_2_param_func")
 def test_partial_2_param_func():
-  cat2 = f(lambda a, b: "0" + a + b)
+  cat2_l:Callable[[str, str], str] = lambda a, b: "0" + a + b
+  cat2 = f(cat2_l)
   get1 = cat2 & "1"
   assert get1("2") == "012"
 

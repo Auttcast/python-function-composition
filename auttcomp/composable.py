@@ -1,11 +1,20 @@
-from typing import Callable, Optional, ParamSpec, TypeVar, Generic, Union
+from typing import Callable, Concatenate, Optional, ParamSpec, TypeVar, Generic
 import inspect
 
 _INV_R_TYPE_PACK = {type((1,)), type(None)}
 
+#composable
 P = ParamSpec('P')
-T = TypeVar('T')
 R = TypeVar('R')
+
+#partial app
+P2 = ParamSpec('P2')
+R2 = TypeVar('R2')
+A = TypeVar('A')
+
+#invocation
+IT = TypeVar('IT')
+IR = TypeVar('IR')
 
 class Composable(Generic[P, R]):
 
@@ -16,7 +25,8 @@ class Composable(Generic[P, R]):
 
   #composition operator
   def __or__(self, other):
-    if not isinstance(other, Composable): other = Composable(other)
+    if not isinstance(other, Composable):
+      other = Composable(other)
 
     new_comp = Composable(self)
     self.__chained = True
@@ -42,7 +52,10 @@ class Composable(Generic[P, R]):
   @staticmethod
   def __is_terminating(f, g):
     g_chain_state = Composable.__is_chained(g)
-    if g_chain_state: return True
+
+    if g_chain_state: 
+      return True
+    
     return Composable.__is_chained(f) is None and g_chain_state is None #is unchained
 
   @staticmethod
@@ -63,22 +76,30 @@ class Composable(Generic[P, R]):
   @staticmethod
   def __invoke_native(func, args):
     result = func(*args)
-    if type(result) not in _INV_R_TYPE_PACK: result = (result,)
+
+    if type(result) not in _INV_R_TYPE_PACK:
+      result = (result,)
+
     return result
 
   @staticmethod
   def __is_chained(target) -> Optional[bool]:
-    if target is None: return None
-    if not isinstance(target, Composable): return None
+    if target is None: 
+      return None
+    
+    if not isinstance(target, Composable): 
+      return None
+    
     return target.__chained
 
   #partial application operator
-  def __and__(self, param): return Composable._PartialApp._apply(self, param)
+  def __and__(self:Callable[Concatenate[A, P2], R2], param:A) -> Callable[P2, R2]:
+    return Composable._PartialApp._part_apply(self, param)
 
   class _PartialApp:
 
     @staticmethod
-    def _apply(func, param):
+    def _part_apply(func, param):
       self_arg_count = Composable._PartialApp.__get_param_count(func)
       return Composable._PartialApp.__apply_inline(func, param, self_arg_count)
 
@@ -97,11 +118,15 @@ class Composable(Generic[P, R]):
 
     @staticmethod
     def __get_param_count(func):
-      if isinstance(func, Composable): return Composable._PartialApp.__get_param_count(func.f)
-      if inspect.isclass(func): return len(inspect.signature(func.__call__).parameters)
+      if isinstance(func, Composable):
+        return Composable._PartialApp.__get_param_count(func.f)
+      
+      if inspect.isclass(func): 
+        return len(inspect.signature(func.__call__).parameters)
+      
       return len(inspect.signature(func).parameters)
 
   #invocation operator
-  def __lt__(next_func, id_func):
+  def __lt__(next_func:Callable[[IT], IR], id_func:Callable[[], IT]):
     return next_func(id_func())
     

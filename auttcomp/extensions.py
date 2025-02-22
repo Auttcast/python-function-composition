@@ -1,27 +1,21 @@
 from .quicklog import log
 from .utility import normalize, ObjUtil
 from .shape_eval import eval_shape
-from .composable import Composable
-from typing import Callable, Any, Tuple, Iterable, TypeVar, Generic, ParamSpec
+from .composable import Composable, P, R
+from typing import Callable, Any, Tuple, Iterable, TypeVar, Generic
 from .expression_builder import ExpressionExecutor
 import functools
 import itertools
 
 T = TypeVar('T')
 T2 = TypeVar('T2')
-R = TypeVar('R')
 K = TypeVar('K')
-
-P = ParamSpec('P')
-
 
 class KeyValue(Generic[K, T]):
   def __init__(self, key: K, value: T):
     self.key: K = key
     self.value: T = value
 
-
-PropertySelector = Callable[[T], R]
 KeySelector = Callable[[T], K]
 
 
@@ -29,7 +23,7 @@ def comp_wrapper(func:Callable[P, R]) -> Composable[P, R]:
   return Composable(func)
 
 
-class Api(Composable):
+class Api(Composable[P, R]):
 
   @staticmethod
   @comp_wrapper
@@ -44,7 +38,7 @@ class Api(Composable):
 
   @staticmethod
   @comp_wrapper
-  def at(func: PropertySelector) -> Callable[[T], R]:
+  def at(func: Callable[[T], R]) -> Callable[[T], R]:
     '''property selector'''
 
     @comp_wrapper
@@ -55,8 +49,8 @@ class Api(Composable):
 
   @staticmethod
   @comp_wrapper
-  def select(func: PropertySelector) -> Callable[[T], R]:
-    '''EXPERIMENTAL'''
+  def select(func: Callable[[T], R]) -> Callable[[T], R]:
+    '''EXPERIMENTAL (basically working like select/map right now)'''
     exp = ExpressionExecutor(func)
 
     @comp_wrapper
@@ -67,7 +61,7 @@ class Api(Composable):
 
   @staticmethod
   @comp_wrapper
-  def map(func: PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
+  def map(func: Callable[[T], R]) -> Callable[[Iterable[T]], Iterable[R]]:
     '''curried version of python's map:
     map(func, *iterables) --> map object\n\nMake an iterator that computes the function using arguments from\neach of the iterables.  Stops when the shortest iterable is exhausted.
     '''
@@ -80,8 +74,8 @@ class Api(Composable):
 
   @staticmethod
   @comp_wrapper
-  def foreach(func: PropertySelector) -> Callable[[Iterable[T]], None]:
-
+  def foreach(func: Callable[[T], R]) -> Callable[[Iterable[T]], None]:
+    '''exec the func for each element in the iterable'''
     @comp_wrapper
     def partial_foreach(data: Iterable[T]) -> None:
       for x in data:
@@ -91,7 +85,7 @@ class Api(Composable):
 
   @staticmethod
   @comp_wrapper
-  def filter(func: PropertySelector) -> Callable[[Iterable[T]], Iterable[T]]:
+  def filter(func: Callable[[T], R]) -> Callable[[Iterable[T]], Iterable[T]]:
     '''curried version of python's filter
     filter(function or None, iterable) --> filter object\n\nReturn an iterator yielding those items of iterable for which function(item)\nis true. If function is None, return the items that are true.
     '''
@@ -131,9 +125,7 @@ class Api(Composable):
   @staticmethod
   @comp_wrapper
   def list(data: Iterable[T]) -> list[T]:
-    '''
-    Built-in mutable sequence.\n\nIf no argument is given, the constructor creates a new empty list.\nThe argument must be an iterable if specified.
-    '''
+    '''Built-in mutable sequence.\n\nIf no argument is given, the constructor creates a new empty list.\nThe argument must be an iterable if specified.'''
     return list(data)
 
   @staticmethod
@@ -153,8 +145,8 @@ class Api(Composable):
 
   @staticmethod
   @comp_wrapper
-  def flatmap(func: PropertySelector) -> Callable[[Iterable[Iterable[T]]], Iterable[R]]:
-    '''iterable implementation of flatmap using python's native map'''
+  def flatmap(func: Callable[[T], R]) -> Callable[[Iterable[Iterable[T]]], Iterable[R]]:
+    '''iterable implementation of flatmap'''
 
     @comp_wrapper
     def partial_flatmap(data: Iterable[Iterable[T]]) -> Iterable[R]:
@@ -167,18 +159,19 @@ class Api(Composable):
   @staticmethod
   @comp_wrapper
   def flatmapid(data: Iterable[Iterable[T]]) -> Iterable[T]:
-    '''iterable implementation of flatmap using python's native map'''
+    '''shortcut for flatmap(identity func)'''
     return Api.flatmap(lambda x: x)(data)
 
   @staticmethod
   @comp_wrapper
-  def shape(data: Any):
+  def shape(data: Any) -> Any:
     '''evaluates the shape of data, returns a shape object'''
     return eval_shape(data)
 
   @staticmethod
   @comp_wrapper
-  def any(func: PropertySelector) -> Callable[[Iterable[T]], bool]:
+  def any(func: Callable[[T], R]) -> Callable[[Iterable[T]], bool]:
+    '''curried version of python's any function. Returns True if any element satisfies the condition'''
     @comp_wrapper
     def partial_any(data: Iterable[T]) -> bool:
       return any(map(lambda x: func(normalize(x)), data))
@@ -187,7 +180,8 @@ class Api(Composable):
 
   @staticmethod
   @comp_wrapper
-  def all(func: PropertySelector) -> Callable[[Iterable[T]], bool]:
+  def all(func: Callable[[T], R]) -> Callable[[Iterable[T]], bool]:
+    '''curried version of python's any function. Returns True if all elements satisfy the condition'''
     @comp_wrapper
     def partial_all(data: Iterable[T]) -> bool:
       return all(map(lambda x: func(normalize(x)), data))
@@ -197,18 +191,18 @@ class Api(Composable):
   @staticmethod
   @comp_wrapper
   def reverse(data: Iterable[T]) -> Iterable[T]:
-    '''curried version of python's reverse'''
+    '''python's reverse'''
     return reversed(ObjUtil.exec_generator(data))
 
   @staticmethod
   @comp_wrapper
   def sort(data: Iterable[T]) -> Iterable[T]:
-    '''curried version of python's sort'''
+    '''python's sort'''
     return sorted(ObjUtil.exec_generator(data))
 
   @staticmethod
   @comp_wrapper
-  def sort_by(func: PropertySelector) -> Callable[[Iterable[T]], Iterable[T]]:
+  def sort_by(func: Callable[[T], R]) -> Callable[[Iterable[T]], Iterable[T]]:
     '''curried version of python's sort with key selector'''
 
     @comp_wrapper
@@ -219,7 +213,7 @@ class Api(Composable):
 
   @staticmethod
   @comp_wrapper
-  def sort_by_descending(func: PropertySelector) -> Callable[[Iterable[T]], Iterable[T]]:
+  def sort_by_descending(func: Callable[[T], R]) -> Callable[[Iterable[T]], Iterable[T]]:
     '''curried version of python's sort w/ key selector followed by reverse'''
 
     @comp_wrapper
@@ -261,7 +255,7 @@ class Api(Composable):
 
   @staticmethod
   @comp_wrapper
-  def group(func: PropertySelector) -> Callable[[Iterable[T]], Iterable[KeyValue[R, Iterable[T]]]]:
+  def group(func: Callable[[T], K]) -> Callable[[Iterable[T]], Iterable[KeyValue[K, Iterable[T]]]]:
     '''curried version of itertools.groupby
     sort by key is used before grouping to achieve singular grouping
     f.groupby(lambda x.property)
@@ -279,14 +273,12 @@ class Api(Composable):
   @comp_wrapper
   def inner_join(
     left_data: Iterable[T],
-    left_key_func: KeySelector,
-    right_key_func: KeySelector,
-    left_value_selector: PropertySelector = None,
-    right_value_selector: PropertySelector = None
+    left_key_func: Callable[[T], K],
+    right_key_func: Callable[[T], K],
+    left_value_selector: Callable[[T], R],
+    right_value_selector: Callable[[T], R]
   ) -> Callable[[T2], Iterable[Tuple[K, Tuple[Iterable[T], Iterable[T2]]]]]:
     '''combine two groups by key
-    f.innerJoin(left_data, left_keySelector, right_keySelector, left_dataSelector, right_dataSelector)
-    returns a tuple of (key, (left_data, right_data))
     '''
 
     if left_value_selector is None: left_value_selector = lambda x: x
