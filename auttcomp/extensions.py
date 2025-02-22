@@ -1,337 +1,315 @@
-from .utility import normalize, ObjUtil
-from .shape_eval import eval_shape, DictShape, ListShape, TupleShape, StrShape
-from .composable import Composable
-from typing import Callable, Any, Tuple, Iterable, Dict, Optional, Union, TypeVar
-from types import SimpleNamespace
-from .expression_builder import ExpressionExecutor
 from .quicklog import log
+from .utility import normalize, ObjUtil
+from .shape_eval import eval_shape
+from .composable import Composable
+from typing import Callable, Any, Tuple, Iterable, TypeVar, Generic, ParamSpec
+from .expression_builder import ExpressionExecutor
 import functools
-import collections.abc
 import itertools
 
-f = Composable
+T = TypeVar('T')
+T2 = TypeVar('T2')
+R = TypeVar('R')
+K = TypeVar('K')
 
-def curried_at(func):
-  def partial_at(obj):
-    return func(normalize(obj))
-  return f(partial_at)
-
-def curried_select(func):
-  exp = ExpressionExecutor(func)
-  def partial_select(obj):
-    return exp(normalize(obj))
-  return f(partial_select)
-
-def curried_map(func):
-  def partial_map(data):
-    return map(lambda x: func(normalize(x)), data)
-  return f(partial_map)
-
-def curried_foreach(func):
-  def partial_foreach(data):
-    for x in data:
-      func(normalize(x))
-  return f(partial_foreach)
-
-def curried_filter(func):
-  def partial_filter(data):
-    return filter(lambda x: func(normalize(x)), data)
-  return f(partial_filter)
-
-def curried_reduce(func):
-  def partial_reduce(data):
-    return functools.reduce(func, data)
-  return f(partial_reduce)
-
-def curried_reduce2(func, initial):
-  def partial_reduce(data):
-    return functools.reduce(func, data, initial)
-  return f(partial_reduce)
-
-def curried_flatmap(func):
-  def partial_flatmap(data):
-    for ys in map(lambda x: func(normalize(x)), data):
-      for y in ys:
-        yield y
-  return f(partial_flatmap)
-
-def curried_any(func):
-  def curried_any(data):
-    return any(map(lambda x: func(normalize(x)), data))
-  return f(curried_any)
-
-def curried_all(func):
-  def partial_all(data):
-    return all(map(lambda x: func(normalize(x)), data))
-  return f(partial_all)
-
-def partial_sort(data):
-  return sorted(ObjUtil.exec_generator(data))
-
-def curried_sortby(func):
-  def partial_sortby(data):
-    return sorted(ObjUtil.exec_generator(data), key=func)
-  return f(partial_sortby)
-
-def curried_sortby_descending(func):
-  def partial_sortby_descending(data):
-    return sorted(ObjUtil.exec_generator(data), key=func, reverse=True)
-  return f(partial_sortby_descending)
-
-def curried_take(count):
-  def partial_take(data):
-    iter_count = 0
-    for x in data:
-      iter_count += 1
-      if iter_count > count:
-        break
-      yield x
-  return f(partial_take)
-
-def curried_skip(skip_count):
-  def partial_skip(data):
-    iter_count = 0
-    for x in data:
-      iter_count += 1
-      if iter_count > skip_count:
-        yield x
-  return f(partial_skip)
-
-def curried_group(func):
-  def partial_group(data):
-    for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=func, reverse=True), key=func):
-      yield SimpleNamespace(**{"key": key, "value": ObjUtil.exec_generator(value)})
-  return f(partial_group)
-
-def curried_inner_join(left_data, left_key_func, right_key_func, left_value_selector=None, right_value_selector=None):
-  if left_value_selector is None: left_value_selector = lambda x: x
-  if right_value_selector is None: right_value_selector = lambda x: x
-
-  def partial_inner_join(right_data):
-    left_group = curried_group(left_key_func)(left_data)
-    right_group = curried_group(right_key_func)(right_data)
-
-    tracker = {}
-    for lg in left_group:
-      tracker[lg.key] = lg.value
-    for rg in right_group:
-      lv = tracker.get(rg.key)
-      if lv is not None:
-        yield rg.key, (left_value_selector(lv), right_value_selector(rg.value))
-
-  return f(partial_inner_join)
-
-def tee(generator):
-  _, g = itertools.tee(iter(generator))
-  return g
+P = ParamSpec('P')
 
 
-type T = TypeVar('T')
-type T2 = TypeVar('T2')
-type R = TypeVar('R')
-type L = TypeVar('L')
-type K = TypeVar('K')
+class KeyValue(Generic[K, T]):
+  def __init__(self, key: K, value: T):
+    self.key: K = key
+    self.value: T = value
 
-type PropertySelector = Callable[[T], R]
-type KeySelector = Callable[[T], K]
 
-class Api:
+PropertySelector = Callable[[T], R]
+KeySelector = Callable[[T], K]
+
+
+def comp_wrapper(func:Callable[P, R]) -> Composable[P, R]:
+  return Composable(func)
+
+
+class Api(Composable):
 
   @staticmethod
-  #def at(func:PropertySelector) -> Callable[[T], R]:
-  def at(func):
+  @comp_wrapper
+  def id(data: T) -> Callable[[], T]:
+    '''create an identity function for the given data'''
+
+    @comp_wrapper
+    def partial_id() -> T:
+      return data
+
+    return partial_id
+
+  @staticmethod
+  @comp_wrapper
+  def at(func: PropertySelector) -> Callable[[T], R]:
     '''property selector'''
-    pass
+
+    @comp_wrapper
+    def partial_at(obj: T) -> R:
+      return func(normalize(obj))
+
+    return partial_at
 
   @staticmethod
-  #def select(func:PropertySelector) -> Callable[[T], R]:
-  def select(func):
-    '''like map with chainable property selection'''
-    pass
+  @comp_wrapper
+  def select(func: PropertySelector) -> Callable[[T], R]:
+    '''EXPERIMENTAL'''
+    exp = ExpressionExecutor(func)
+
+    @comp_wrapper
+    def partial_select(obj: T) -> R:
+      return exp(normalize(obj))
+
+    return partial_select
 
   @staticmethod
-  #def map(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
-  def map(func):
+  @comp_wrapper
+  def map(func: PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
     '''curried version of python's map:
     map(func, *iterables) --> map object\n\nMake an iterator that computes the function using arguments from\neach of the iterables.  Stops when the shortest iterable is exhausted.
     '''
-    pass
+
+    @comp_wrapper
+    def partial_map(data: Iterable[T]) -> Iterable[R]:
+      return map(lambda x: func(normalize(x)), data)
+
+    return partial_map
 
   @staticmethod
-  #def foreach(func:PropertySelector) -> Callable[[Iterable[T]], Any]: pass
-  def foreach(func): pass
+  @comp_wrapper
+  def foreach(func: PropertySelector) -> Callable[[Iterable[T]], None]:
+
+    @comp_wrapper
+    def partial_foreach(data: Iterable[T]) -> None:
+      for x in data:
+        func(normalize(x))
+
+    return partial_foreach
 
   @staticmethod
-  #def filter(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
-  def filter(func):
+  @comp_wrapper
+  def filter(func: PropertySelector) -> Callable[[Iterable[T]], Iterable[T]]:
     '''curried version of python's filter
     filter(function or None, iterable) --> filter object\n\nReturn an iterator yielding those items of iterable for which function(item)\nis true. If function is None, return the items that are true.
     '''
-    pass
+
+    @comp_wrapper
+    def partial_filter(data: Iterable[T]) -> Iterable[T]:
+      return filter(lambda x: func(normalize(x)), data)
+
+    return partial_filter
 
   @staticmethod
-  #def reduce(func:Callable[[T, T], R]) -> Callable[[T], R]:
-  def reduce(func):
+  @comp_wrapper
+  def reduce(func: Callable[[T, T], R]) -> Callable[[Iterable[T]], R]:
     '''curried version of functools's reduce (to use initial value, use reduce2)
     reduce(function, iterable) -> value\n\nApply a function of two arguments cumulatively to the items of an iterable, from left to right.\n\nThis effectively reduces the iterable to a single value.  If initial is present,\nit is placed before the items of the iterable in the calculation, and serves as\na default when the iterable is empty.\n\nFor example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5])\ncalculates ((((1 + 2) + 3) + 4) + 5).
     '''
-    pass
+
+    @comp_wrapper
+    def partial_reduce(data: Iterable[T]) -> R:
+      return functools.reduce(func, data)
+
+    return partial_reduce
 
   @staticmethod
-  #def reduce2(func:Callable[[T, T, R], R]) -> Callable[[T], R]:
-  def reduce2(func):
+  @comp_wrapper
+  def reduce2(func: Callable[[T, T], R], initial: T) -> Callable[[Iterable[T]], R]:
     '''curried version of functools's reduce
     reduce(function, iterable, initial) -> value\n\nApply a function of two arguments cumulatively to the items of an iterable, from left to right.\n\nThis effectively reduces the iterable to a single value.  If initial is present,\nit is placed before the items of the iterable in the calculation, and serves as\na default when the iterable is empty.\n\nFor example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5])\ncalculates ((((1 + 2) + 3) + 4) + 5).
     '''
-    pass
+
+    @comp_wrapper
+    def partial_reduce(data: Iterable[T]) -> R:
+      return functools.reduce(func, data, initial)
+
+    return partial_reduce
 
   @staticmethod
-  #def list(func: Iterable[T]) -> list[R]:
-  def list(func):
-    '''curried version of python's list
+  @comp_wrapper
+  def list(data: Iterable[T]) -> list[T]:
+    '''
     Built-in mutable sequence.\n\nIf no argument is given, the constructor creates a new empty list.\nThe argument must be an iterable if specified.
     '''
-    pass
+    return list(data)
 
   @staticmethod
-  #def distinct(func:Callable[[T], Iterable[R]]) -> Callable[[T], Iterable[R]]:
-  def distinct(func):
+  @comp_wrapper
+  def distinct(data: Iterable[T]) -> Iterable[T]:
     '''a general purpose distinct implementation where performance is not required
     if your data is compatible, you may be able to use distinctSet
     '''
-    pass
+
+    return list(functools.reduce(lambda a, b: a + [b] if b not in a else a, data, []))
 
   @staticmethod
-  #def distinct_set(func:Callable[[T], Iterable[R]]) -> Callable[[T], Iterable[R]]:
-  def distinct_set(func):
+  @comp_wrapper
+  def distinct_set(data: Iterable[T]) -> Iterable[T]:
     '''implementation of distinct using python's set, but limited to qualifying primitive types'''
-    pass
+    return list(set(data))
 
   @staticmethod
-  #def flatmap(func:Callable[[T], Iterable[Iterable[R]]]) -> Callable[[T], Iterable[R]]:
-  def flatmap(func):
+  @comp_wrapper
+  def flatmap(func: PropertySelector) -> Callable[[Iterable[Iterable[T]]], Iterable[R]]:
     '''iterable implementation of flatmap using python's native map'''
-    pass
+
+    @comp_wrapper
+    def partial_flatmap(data: Iterable[Iterable[T]]) -> Iterable[R]:
+      for ys in map(lambda x: func(normalize(x)), data):
+        for y in ys:
+          yield y
+
+    return partial_flatmap
 
   @staticmethod
-  #def flatmap(func:Callable[[T], Iterable[Iterable[R]]]) -> Callable[[T], Iterable[R]]:
-  def flatmapid(func):
+  @comp_wrapper
+  def flatmapid(data: Iterable[Iterable[T]]) -> Iterable[T]:
     '''iterable implementation of flatmap using python's native map'''
-    pass
+    return Api.flatmap(lambda x: x)(data)
 
   @staticmethod
-  #def shape(obj:T) -> Union[DictShape|ListShape|TupleShape|StrShape]:
-  def shape(obj):
-    '''evaluates the shape of data, returns a shape object, pprints thru __repr__'''
-    pass
+  @comp_wrapper
+  def shape(data: Any):
+    '''evaluates the shape of data, returns a shape object'''
+    return eval_shape(data)
 
   @staticmethod
-  #def any(func:Callable[[T], bool]) -> Callable[[Iterable[T]], bool]: pass
-  def any(func): pass
+  @comp_wrapper
+  def any(func: PropertySelector) -> Callable[[Iterable[T]], bool]:
+    @comp_wrapper
+    def partial_any(data: Iterable[T]) -> bool:
+      return any(map(lambda x: func(normalize(x)), data))
+
+    return partial_any
 
   @staticmethod
-  #def all(func:Callable[[T], bool]) -> Callable[[Iterable[T]], bool]: pass
-  def all(func): pass
+  @comp_wrapper
+  def all(func: PropertySelector) -> Callable[[Iterable[T]], bool]:
+    @comp_wrapper
+    def partial_all(data: Iterable[T]) -> bool:
+      return all(map(lambda x: func(normalize(x)), data))
+
+    return partial_all
 
   @staticmethod
-  #def reverse(data:Iterable[T]) -> Iterable[R]:
-  def reverse(data):
+  @comp_wrapper
+  def reverse(data: Iterable[T]) -> Iterable[T]:
     '''curried version of python's reverse'''
-    pass
+    return reversed(ObjUtil.exec_generator(data))
 
   @staticmethod
-  #def sort(data:Iterable[T]) -> Iterable[R]:
-  def sort(data):
+  @comp_wrapper
+  def sort(data: Iterable[T]) -> Iterable[T]:
     '''curried version of python's sort'''
-    pass
+    return sorted(ObjUtil.exec_generator(data))
 
   @staticmethod
-  #def sort_by(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
-  def sort_by(func):
+  @comp_wrapper
+  def sort_by(func: PropertySelector) -> Callable[[Iterable[T]], Iterable[T]]:
     '''curried version of python's sort with key selector'''
-    pass
+
+    @comp_wrapper
+    def partial_sort_by(data: Iterable[T]) -> Iterable[T]:
+      return sorted(ObjUtil.exec_generator(data), key=func)
+
+    return partial_sort_by
 
   @staticmethod
-  #def sort_by_descending(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[R]]:
-  def sort_by_descending(func):
+  @comp_wrapper
+  def sort_by_descending(func: PropertySelector) -> Callable[[Iterable[T]], Iterable[T]]:
     '''curried version of python's sort w/ key selector followed by reverse'''
-    pass
+
+    @comp_wrapper
+    def partial_sort_by_descending(data: Iterable[T]) -> Iterable[T]:
+      return sorted(ObjUtil.exec_generator(data), key=func, reverse=True)
+
+    return partial_sort_by_descending
 
   @staticmethod
-  #def take(count:int) -> Callable[[Iterable[T]], Iterable[R]]:
-  def take(count):
-    '''basically list[0:count]'''
-    pass
+  @comp_wrapper
+  def take(count: int) -> Callable[[Iterable[T]], Iterable[T]]:
+    '''basically yielded list[0:count]'''
+
+    @comp_wrapper
+    def partial_take(data: Iterable[T]) -> Iterable[T]:
+      iter_count = 0
+      for x in data:
+        iter_count += 1
+        if iter_count > count:
+          break
+        yield x
+
+    return partial_take
 
   @staticmethod
-  #def skip(count:int) -> Callable[[Iterable[T]], Iterable[R]]:
-  def skip(count):
-    '''basically list[count:]'''
-    pass
+  @comp_wrapper
+  def skip(count: int) -> Callable[[Iterable[T]], Iterable[T]]:
+    '''basically yielded list[count:]'''
+
+    @comp_wrapper
+    def partial_skip(data: Iterable[T]) -> Iterable[R]:
+      iter_count = 0
+      for x in data:
+        iter_count += 1
+        if iter_count > count:
+          yield x
+
+    return partial_skip
 
   @staticmethod
-  #def group(func:PropertySelector) -> Callable[[Iterable[T]], Iterable[Dict[T, Iterable[R]]]]:
-  def group(func):
+  @comp_wrapper
+  def group(func: PropertySelector) -> Callable[[Iterable[T]], Iterable[KeyValue[R, Iterable[T]]]]:
     '''curried version of itertools.groupby
     sort by key is used before grouping to achieve singular grouping
     f.groupby(lambda x.property)
     this implementation runs the iterable for the grouping, but yields the key/value pair as a new iterable
     '''
-    pass
+
+    @comp_wrapper
+    def partial_group(data: Iterable[T]) -> Iterable[KeyValue[R, Iterable[T]]]:
+      for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=func, reverse=True), key=func):
+        yield KeyValue(key, ObjUtil.exec_generator(value))
+
+    return partial_group
 
   @staticmethod
-  #def inner_join(left_data:T, left_key_selector:KeySelector, right_keySelector:KeySelector, left_dataSelector:PropertySelector, right_dataSelector:PropertySelector) -> Callable[[T2], Iterable[Tuple[K, Tuple[T, T2]]]]:
-  def inner_join(left_data, left_key_selector, right_key_selector, left_data_selector, right_data_selector):
+  @comp_wrapper
+  def inner_join(
+    left_data: Iterable[T],
+    left_key_func: KeySelector,
+    right_key_func: KeySelector,
+    left_value_selector: PropertySelector = None,
+    right_value_selector: PropertySelector = None
+  ) -> Callable[[T2], Iterable[Tuple[K, Tuple[Iterable[T], Iterable[T2]]]]]:
     '''combine two groups by key
     f.innerJoin(left_data, left_keySelector, right_keySelector, left_dataSelector, right_dataSelector)
     returns a tuple of (key, (left_data, right_data))
     '''
-    pass
+
+    if left_value_selector is None: left_value_selector = lambda x: x
+    if right_value_selector is None: right_value_selector = lambda x: x
+
+    @comp_wrapper
+    def partial_inner_join(right_data: Iterable[T2]) -> Iterable[Tuple[K, Tuple[T, T2]]]:
+      left_group = Api.group(left_key_func)(left_data)
+      right_group = Api.group(right_key_func)(right_data)
+
+      tracker = {}
+      for lg in left_group:
+        tracker[lg.key] = lg.value
+      for rg in right_group:
+        lv = tracker.get(rg.key)
+        if lv is not None:
+          yield rg.key, (left_value_selector(lv), right_value_selector(rg.value))
+
+    return partial_inner_join
 
   @staticmethod
-  #def tee(gen:Iterable) -> Iterable:
-  def tee(gen):
+  @comp_wrapper
+  def tee(generator: Iterable[T]) -> Iterable[T]:
     '''itertools.tee - clone an iterable'''
-    pass
-#
-# def getExtDoc():
-#   api = list(map(lambda x: getattr(Api, x), filter(lambda x: "__" not in x, dir(Api))))
-#   return [(x.__name__, x.__doc__, x.__annotations__) for x in api]
-#
-# extDoc = getExtDoc()
-
-Api = f
-Api.at = Composable(curried_at)
-Api.select = Composable(curried_select)
-Api.map = Composable(curried_map)
-Api.foreach = Composable(curried_foreach)
-Api.filter = Composable(curried_filter)
-Api.reduce = Composable(curried_reduce)
-Api.reduce2 = Composable(curried_reduce2)
-Api.list = Composable(list)
-Api.distinct = Composable(lambda x: list(functools.reduce(lambda a, b: a+[b] if b not in a else a, x, [])))
-Api.distinct_set = Composable(lambda x: list(set(x)))
-Api.flatmap = Composable(curried_flatmap)
-Api.flatmapid = Composable(curried_flatmap)(lambda x: x)
-Api.shape = Composable(eval_shape)
-Api.any = Composable(curried_any)
-Api.all = Composable(curried_all)
-Api.reverse = Composable(lambda x: reversed(ObjUtil.exec_generator(x)))
-Api.sort = Composable(partial_sort)
-Api.sort_by = Composable(curried_sortby)
-Api.sort_by_descending = Composable(curried_sortby_descending)
-Api.take = Composable(curried_take)
-Api.skip = Composable(curried_skip)
-Api.group = Composable(curried_group)
-Api.inner_join = Composable(curried_inner_join)
-Api.tee = Composable(tee)
-#
-# def updateExtDoc(doc):
-#   # (name, doc, annotations)
-#   for ed in doc:
-#     attr = getattr(f, ed[0])
-#     setattr(attr, '__doc__', ed[1] or "undocumented")
-#     setattr(attr, '__annotations__', ed[2])
-#
-# updateExtDoc(extDoc)
-#
+    _, g = itertools.tee(iter(generator))
+    return g

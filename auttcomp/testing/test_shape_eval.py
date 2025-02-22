@@ -177,5 +177,5 @@ def test_dict_only_null_props():
 @tracelog("test_complex_obj_civitai")
 def test_complex_obj_civitai():
   obj = get_civitai_sample()
-  f(obj.result.data.json.collection) > f.shape
+  f.id(obj.result.data.json.collection) > f.shape
   #does not throw

@@ -8,7 +8,7 @@ class ShapeNode:
     self.containerType : Union[list|dict|str|tuple|None] = container_type
     self.value : str = value
     self.parent:ShapeNode = parent
-    self.children:[ShapeNode] = []
+    self.children:list[ShapeNode] = []
     self.tuple_index = None
     self.is_null_val = False
 
@@ -256,7 +256,7 @@ class TupleShape(BaseShape):
 
 
 
-def eval_shape(obj, set_any_type=False):
+def eval_shape(obj:Any, set_any_type=False) -> Any:
   w = NodeWriter()
   object_crawler(obj, w)
   res = node_graph_to_obj(w.h, set_any_type)

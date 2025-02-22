@@ -1,13 +1,16 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, ParamSpec, TypeVar, Generic, Union
 import inspect
 
 _INV_R_TYPE_PACK = {type((1,)), type(None)}
 
-class Composable:
+P = ParamSpec('P')
+T = TypeVar('T')
+R = TypeVar('R')
 
-  def __init__(self, func):
-    self.__is_data = not isinstance(func, Callable)
-    self.f = func
+class Composable(Generic[P, R]):
+
+  def __init__(self, func:Callable[P, R]):
+    self.f:Callable[P, R] = func
     self.g = None
     self.__chained = False
 
@@ -16,18 +19,15 @@ class Composable:
     if not isinstance(other, Composable): other = Composable(other)
 
     new_comp = Composable(self)
-    new_comp.__is_data = self.__is_data
     self.__chained = True
     new_comp.__chained = False
     other_comp = Composable(other.f)
     other_comp.__chained = True
-    other_comp.__is_data = self.__is_data
     new_comp.g = other_comp
 
     return new_comp
 
-  def __call__(self, *args):
-    if self.__is_data: return self.f
+  def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
 
     result = Composable.__internal_call(self.f, self.g, args)
     is_single_tuple = type(result) == tuple and len(result) == 1
@@ -102,10 +102,6 @@ class Composable:
       return len(inspect.signature(func).parameters)
 
   #invocation operator
-  def __lt__(self, comp_obj):
-    next_func = self
-    data = comp_obj.f
-    result = next_func(data)
-    if isinstance(result, tuple) and len(result) == 1:
-      result = result[0]
-    return result
+  def __lt__(next_func, id_func):
+    return next_func(id_func())
+    

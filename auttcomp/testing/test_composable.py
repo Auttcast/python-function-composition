@@ -1,7 +1,9 @@
+from typing import Callable
 from ..quicklog import tracelog, log
-from ..extensions import Api as f
+from ..composable import Composable as f
 
-inc = f(lambda x: x+1)
+inc_lam:Callable[[int], int] = lambda x: x+1
+inc = f(inc_lam)
 incPass = f(lambda x,y: (x+1, y+1))
 power = f(lambda x,y: x**y)
 splitNum = f(lambda x: (x/2, x/2))
