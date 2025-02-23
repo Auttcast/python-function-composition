@@ -6,12 +6,12 @@ def increment(value:int) -> int:
   return value + 1
 
 inc = f(increment)
-incPass = f(lambda x,y: (x+1, y+1))
+inc_pass = f(lambda x,y: (x+1, y+1))
 power = f(lambda x,y: x**y)
-splitNum = f(lambda x: (x/2, x/2))
-withStr = f(lambda x: (x, str(x)))
-strLen = f(lambda x,y: len(y))
-passthru = f(lambda x: x)
+split_num = f(lambda x: (x/2, x/2))
+with_str = f(lambda x: (x, str(x)))
+str_len = f(lambda x,y: len(y))
+pass_thru = f(lambda x: x)
 
 @tracelog("test_minimal_single_param")
 def test_minimal_single_param():
@@ -29,30 +29,30 @@ def test_long_comp():
 
 @tracelog("test_single_multi_param")
 def test_single_multi_param():
-  (r0, r1) = incPass(1, 1)
+  (r0, r1) = inc_pass(1, 1)
   assert r0 == 2 and r1 == 2
 
 @tracelog("test_multi_param")
 def test_multi_param():
-  inc_pass4 = incPass | incPass | incPass | incPass
+  inc_pass4 = inc_pass | inc_pass | inc_pass | inc_pass
   (r0, r1) = inc_pass4(1, 1)
   assert r0 == 5 and r1 == 5
 
 @tracelog("test_various_param")
 def test_various_param():
-  func = incPass | power | withStr | strLen
+  func = inc_pass | power | with_str | str_len
   assert func(3, 3) == 3
 
 @tracelog("test_inverse_mixmatch")
 def test_inverse_mixmatch():
-  func = incPass | power | withStr | strLen
+  func = inc_pass | power | with_str | str_len
   assert func(3, 3) == 3
-  func2 = power | splitNum | incPass | f(lambda x,y: (x/2) + (x/2)) | withStr | strLen
+  func2 = power | split_num | inc_pass | f(lambda x,y: (x/2) + (x/2)) | with_str | str_len
   assert func2(4, 4) == 5
 
 @tracelog("test_collections")
 def test_collections():
-  pass3 = passthru | passthru | passthru
+  pass3 = pass_thru | pass_thru | pass_thru
   assert pass3([1, 2, 3]) == [1, 2, 3]
 
 def range_factory(x):

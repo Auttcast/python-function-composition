@@ -1,3 +1,4 @@
+from collections import namedtuple
 from .quicklog import log
 from .utility import normalize, ObjUtil
 from .shape_eval import eval_shape
@@ -5,6 +6,7 @@ from .composable import Composable, P, R
 from typing import Callable, Any, Tuple, Iterable, TypeVar, Generic
 from .expression_builder import ExpressionExecutor
 from typing import Callable
+from pprint import pprint
 import functools
 import itertools
 
@@ -15,10 +17,7 @@ K = TypeVar('K')
 def comp_wrapper(func:Callable[P, R]) -> Composable[P, R]:
   return Composable(func)
 
-class KeyValue(Generic[K, T]):
-  def __init__(self, key: K, value: T):
-    self.key: K = key
-    self.value: T = value
+KeyValuePair = namedtuple("KeyValuePair", ["key", "value"])
 
 class Api(Composable[P, R]):
 
@@ -210,14 +209,14 @@ class Api(Composable[P, R]):
 
   @staticmethod
   @comp_wrapper
-  def sort_by_descending(func: Callable[[T], R]) -> Callable[[Iterable[T]], Iterable[T]]:
+  def sort_by_desc(func: Callable[[T], R]) -> Callable[[Iterable[T]], Iterable[T]]:
     '''curried version of python's sort w/ key selector followed by reverse'''
 
     @comp_wrapper
-    def partial_sort_by_descending(data: Iterable[T]) -> Iterable[T]:
+    def partial_sort_by_desc(data: Iterable[T]) -> Iterable[T]:
       return sorted(ObjUtil.exec_generator(data), key=func, reverse=True)
 
-    return partial_sort_by_descending
+    return partial_sort_by_desc
 
   @staticmethod
   @comp_wrapper
@@ -252,7 +251,7 @@ class Api(Composable[P, R]):
 
   @staticmethod
   @comp_wrapper
-  def group(func: Callable[[T], K]) -> Callable[[Iterable[T]], Iterable[KeyValue[K, Iterable[T]]]]:
+  def group(func: Callable[[T], K]) -> Callable[[Iterable[T]], Iterable[KeyValuePair[K, Iterable[T]]]]:
     '''curried version of itertools.groupby
     sort by key is used before grouping to achieve singular grouping
     f.groupby(lambda x.property)
@@ -260,29 +259,25 @@ class Api(Composable[P, R]):
     '''
 
     @comp_wrapper
-    def partial_group(data: Iterable[T]) -> Iterable[KeyValue[R, Iterable[T]]]:
-      for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=func, reverse=True), key=func):
-        yield KeyValue(key, ObjUtil.exec_generator(value))
+    def partial_group(data: Iterable[T]) -> Iterable[KeyValuePair[R, Iterable[T]]]:
+      for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=func), key=func):
+        yield KeyValuePair(key, ObjUtil.exec_generator(value))
 
     return partial_group
 
   @staticmethod
   @comp_wrapper
-  def inner_join(
+  def join(
     left_data: Iterable[T],
     left_key_func: Callable[[T], K],
     right_key_func: Callable[[T], K],
-    left_value_selector: Callable[[T], R],
-    right_value_selector: Callable[[T], R]
-  ) -> Callable[[T2], Iterable[Tuple[K, Tuple[Iterable[T], Iterable[T2]]]]]:
-    '''combine two groups by key
-    '''
-
-    if left_value_selector is None: left_value_selector = lambda x: x
-    if right_value_selector is None: right_value_selector = lambda x: x
+    left_value_selector: Callable[[T], Any],
+    right_value_selector: Callable[[T], Any]
+  ) -> Callable[[T2], Iterable[Tuple[K, Tuple[T, T2]]]]:
+    '''(inner join) combine two groups by key'''
 
     @comp_wrapper
-    def partial_inner_join(right_data: Iterable[T2]) -> Iterable[Tuple[K, Tuple[T, T2]]]:
+    def partial_join(right_data: Iterable[T2]) -> Iterable[Tuple[K, Tuple[T, T2]]]:
       left_group = Api.group(left_key_func)(left_data)
       right_group = Api.group(right_key_func)(right_data)
 
@@ -292,13 +287,8 @@ class Api(Composable[P, R]):
       for rg in right_group:
         lv = tracker.get(rg.key)
         if lv is not None:
-          yield rg.key, (left_value_selector(lv), right_value_selector(rg.value))
+          yield rg.key, (list(map(left_value_selector, lv)), list(map(right_value_selector, rg.value)))
 
-    return partial_inner_join
+    return partial_join
 
-  @staticmethod
-  @comp_wrapper
-  def tee(generator: Iterable[T]) -> Iterable[T]:
-    '''itertools.tee - clone an iterable'''
-    _, g = itertools.tee(iter(generator))
-    return g
+  

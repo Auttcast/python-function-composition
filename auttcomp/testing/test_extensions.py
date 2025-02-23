@@ -1,152 +1,208 @@
-from ..extensions import Api as f
+from typing import Generator
+from ..extensions import KeyValuePair, Api as f
 from .base_test import get_hugging_face_sample
 from ..quicklog import tracelog, log
 
 data = get_hugging_face_sample()
 
+@tracelog("test_id")
+def test_id():
+  func = f.id(123)
+  actual = func()
+  assert actual == 123
 
 @tracelog("test_at")
 def test_at():
-  sr = f.id(data) > f.shape | f.at(lambda x: x.models)
-  assert "author" in sr[0].keys()
+  data = {"foo": 123}
+  actual = f.at(lambda x: x.foo)(data)
+  assert actual == 123
 
 @tracelog("test_map")
 def test_map():
-  r1 = f.id(data) > f.shape | f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
-  assert r1 == ['str']
-
-@tracelog("test_author_query")
-def test_author_query():
-  schema_query = f.id(data) > f.shape | f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
-  data_query = f.id(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
-
-  assert schema_query == ['str']
-  assert data_query[0] == 'deepseek-ai'
+  data = [1, 2, 3]
+  gen = f.map(lambda x: x + 1)(data)
+  actual = list(gen)
+  assert actual == [2, 3, 4]
 
 @tracelog("test_filter")
 def test_filter():
-  data_query = f.id(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | f.filter(lambda x: "deep" in x) | list
-  assert data_query == ["deepseek-ai"]
+  data = [1, 2, 3]
+  gen = f.filter(lambda x: x % 2 == 0)(data)
+  actual = list(gen)
+  assert actual == [2]
 
 @tracelog("test_reduce")
 def test_reduce():
-  s1 = f.id(data) > f.at(lambda x: x.models) | f.map(lambda x: x.downloads) | list
-  data_query = f.id(data) > f.at(lambda x: x.models) | f.map(lambda x: x.downloads) | f.reduce2(lambda x, y: x+y, 0)
-  assert data_query == sum(s1)
+  data = [2, 2, 2]
+  actual = f.reduce(lambda p, n: p + n)(data)
+  assert actual == 6
 
 @tracelog("test_flatmap")
 def test_flatmap():
-  data_query = (f.id(data) > f.at(lambda x: x.models)
-               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls is not None)
-               | f.flatmap(lambda x: x.widgetOutputUrls)
-               | list)
-  assert data_query == ['foo', 'foo1', 'foo2', 'foo2']
+  data = [[1], [1], [1]]
+  gen = f.flatmap(lambda x: x)(data)
+  actual = list(gen)
+  assert actual == [1, 1, 1]
 
 @tracelog("test_flatmapid")
 def test_flatmapid():
-  arr = [[1]]*3
-  res = f.id(arr) > f.flatmapid | list
-  assert res == [1, 1, 1]
+  data = [[1], [1], [1]]
+  gen = f.flatmapid(data)
+  actual = list(gen)
+  assert actual == [1, 1, 1]
 
 @tracelog("test_reverse")
 def test_reverse():
-  data_query = (f.id(data) > f.at(lambda x: x.models)
-               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls is not None)
-               | f.flatmap(lambda x: x.widgetOutputUrls)
-               | f.reverse
-               | list)
-  assert data_query == ['foo2', 'foo2', 'foo1', 'foo']
+  data = [1, 2, 3]
+  gen = f.reverse(data)
+  actual = list(gen)
+  assert actual == [3, 2, 1]
 
 @tracelog("test_any")
 def test_any():
-  data_query = (f.id(data) > f.at(lambda x: x.models)
-               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls is not None)
-               | f.flatmap(lambda x: x.widgetOutputUrls)
-               | f.any(lambda x: "1" in x))
-  assert data_query
+  data1 = [0, 0, 0]
+  data2 = [0, 0, 111]
+
+  actual1 = f.any(lambda x: x == 111)(data1)
+  actual2 = f.any(lambda x: x == 111)(data2)
+
+  assert actual1 == False
+  assert actual2 == True
 
 @tracelog("test_all")
 def test_all():
-  data_query = (f.id(data) > f.at(lambda x: x.models)
-               | f.filter(lambda x: hasattr(x, 'widgetOutputUrls') and x.widgetOutputUrls is not None)
-               | f.flatmap(lambda x: x.widgetOutputUrls)
-               | f.all(lambda x: "oo" in x))
-  assert data_query
+  data1 = [0, 0, 0]
+  data2 = [0, 0, 111]
 
+  actual1 = f.all(lambda x: x == 0)(data1)
+  actual2 = f.all(lambda x: x == 0)(data2)
+
+  assert actual1 == True
+  assert actual2 == False
+  
 @tracelog("test_sort")
 def test_sort():
-  data_query = f.id(['z', 'x', 'a', 'b']) > f.sort | list
-  assert data_query == ['a', 'b', 'x', 'z']
-
-@tracelog("test_take")
-def test_take():
-  dist = f.id(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | list
-  data_query = f.id(dist) > f.take(3) | f.list
-  assert data_query == (f.id(dist) > f.list)[0:3]
-
-@tracelog("test_skip")
-def test_skip():
-  dist = f.id(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | f.distinct | list
-  data_query = f.id(dist) > f.skip(3) | f.list
-  assert len(data_query) == len(dist[3:])
-  assert data_query == dist[3:]
+  data = [2, 3, 1]
+  gen = f.sort(data)
+  actual = list(gen)
+  assert actual == [1, 2, 3]
 
 @tracelog("test_sort_by")
 def test_sort_by():
-  unsorted_authors = f.id(data) > f.at(lambda x: x.models) | f.map(lambda x: x.author) | list
-  native_sorted_authors = sorted(unsorted_authors)
-  fsorted_authors = f.id(data) > f.at(lambda x: x.models) | f.sort_by(lambda x: x.author) | f.map(lambda x: x.author) | list
+  data = [
+    {"id": 2},
+    {"id": 3},
+    {"id": 1}
+  ]
+  expected = [
+    {"id": 1},
+    {"id": 2},
+    {"id": 3}
+  ]
 
-  assert fsorted_authors == native_sorted_authors
+  gen = f.sort_by(lambda x: x['id'])(data)
+
+  actual = list(gen)
+
+  assert actual == expected
+
+@tracelog("test_sort_by_desc")
+def test_sort_by_desc():
+  data = [
+    {"id": 2},
+    {"id": 3},
+    {"id": 1}
+  ]
+  expected = [
+    {"id": 3},
+    {"id": 2},
+    {"id": 1}
+  ]
+
+  gen = f.sort_by_desc(lambda x: x['id'])(data)
+
+  actual = list(gen)
+
+  assert actual == expected
+
+@tracelog("test_take")
+def test_take():
+  data = [1, 2, 3]
+  gen = f.take(2)(data)
+  actual = list(gen)
+  assert actual == [1, 2]
+
+@tracelog("test_skip")
+def test_skip():
+  data = [1, 2, 3]
+  gen = f.skip(1)(data)
+  actual = list(gen)
+  assert actual == [2, 3]
 
 @tracelog("test_group")
 def test_group():
-  group_by_author = (f.id(data) 
-                    > f.at(lambda x: x.models)
-                    | f.group(lambda x: x.author)
-                    | f.map(lambda g: (g.key, len(g.value)))
-                    | f.sort_by_descending(lambda x: x[1])
-                    | f.take(1)
-                    | list)
+  data = [
+    {"id": 1, "tag": "TAG1"},
+    {"id": 2, "tag": "TAG2"},
+    {"id": 3, "tag": "TAG1"},
+    {"id": 4, "tag": "TAG2"}
+  ]
 
-  assert group_by_author == [('deepseek-ai', 12)]
+  expected = [
+    KeyValuePair("TAG1", [
+      {"id": 1, "tag": "TAG1"},
+      {"id": 3, "tag": "TAG1"}
+    ]),
+    KeyValuePair("TAG2", [
+      {"id": 2, "tag": "TAG2"},
+      {"id": 4, "tag": "TAG2"}
+    ])
+  ]
+
+  gen = f.group(lambda x: x['tag'])
+  
+  actual = list(gen(data))
+  
+  assert actual == expected
 
 
 @tracelog("test_join")
 def test_join():
 
-  group_by_author = f.id(data) > f.at(lambda x: x.models) | f.group(lambda x: x.author) | f.tee
+  dataFoo = [
+    {"foo_id": 1, "foo": "foo1"},
+    {"foo_id": 2, "foo": "foo2"},
+    {"foo_id": 50, "foo": "foo50"},
+    {"foo_id": 3, "foo": "foo3"},
+    {"foo_id": 4, "foo": "foo4"}
+  ]
 
-  res_count_by_author = (
-      f.id(group_by_author)
-      > f.tee
-      | f.map(lambda g: (g.key, len(g.value)))
-      | f.sort_by_descending(lambda x: x[1])
-      | f.take(3)
-      | list
-  )
+  dataBar = [
+    {"bar_id": 1, "bar": "bar1"},
+    {"bar_id": 2, "bar": "bar2"},
+    {"bar_id": 3, "bar": "bar3"},
+    {"bar_id": 4, "bar": "bar4"},
+    {"bar_id": 100, "bar": "bar100"}
+  ]
 
-  def sum_many_likes(arr):
-    return f.id(arr) > f.map(lambda x: x.likes) | sum
+  expected = [
+    (1, (["foo1"], ["bar1"])),
+    (2, (["foo2"], ["bar2"])),
+    (3, (["foo3"], ["bar3"])),
+    (4, (["foo4"], ["bar4"]))
+  ]
 
-  likes_by_author = (
-    f.id(group_by_author)
-    > f.tee
-    | f.map(lambda g: (g.key, sum_many_likes(g.value)))
-    | list
-  )
-
-  key_select = lambda x: x[0]
+  gen = f.join(
+    dataFoo,
+    lambda x: x['foo_id'],
+    lambda x: x['bar_id'],
+    lambda x: x['foo'],
+    lambda x: x['bar']
+  )(dataBar)
   
-  join = (f.id(res_count_by_author) > f.inner_join(
-      likes_by_author,
-      key_select,
-      key_select,
-      lambda l: l[0][1],
-      lambda r: r[0][1]
-  ) | list)
+  actual = list(gen)
 
-  assert join == [('deepseek-ai', (14027, 12)), ('bytedance-research', (221, 2)), ('Qwen', (596, 4))]
+  assert actual == expected
 
 @tracelog("test_distinct_set")
 def test_distinct_set():
