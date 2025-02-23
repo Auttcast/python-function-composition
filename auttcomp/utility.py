@@ -2,10 +2,6 @@ import json
 from types import SimpleNamespace
 from typing import Iterable
 
-def normalize(obj):
-  #if isinstance(obj, dict): return SimpleNamespace(**obj)
-  return obj
-
 class JsonUtil:
   @staticmethod
   def to_object(json_str):

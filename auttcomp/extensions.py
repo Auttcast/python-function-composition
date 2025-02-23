@@ -1,12 +1,10 @@
-from .quicklog import log
 from collections import namedtuple
-from .utility import normalize, ObjUtil
+from .utility import ObjUtil
 from .shape_eval import eval_shape
 from .composable import Composable, P, R
 from typing import Callable, Any, Tuple, Iterable, TypeVar
 from .expression_builder import ExpressionExecutor
 from typing import Callable
-from pprint import pprint
 import functools
 import itertools
 
@@ -42,7 +40,7 @@ class Api(Composable[P, R]):
 
     @comp_wrapper
     def partial_at(obj: T) -> R:
-      return func(normalize(obj))
+      return func(obj)
 
     return partial_at
 
@@ -54,7 +52,7 @@ class Api(Composable[P, R]):
 
     @comp_wrapper
     def partial_select(obj: T) -> R:
-      return exp(normalize(obj))
+      return exp(obj)
 
     return partial_select
 
@@ -67,7 +65,7 @@ class Api(Composable[P, R]):
 
     @comp_wrapper
     def partial_map(data: Iterable[T]) -> Iterable[R]:
-      return map(lambda x: func(normalize(x)), data)
+      return map(func, data)
 
     return partial_map
 
@@ -78,7 +76,7 @@ class Api(Composable[P, R]):
     @comp_wrapper
     def partial_foreach(data: Iterable[T]) -> None:
       for x in data:
-        func(normalize(x))
+        func(x)
 
     return partial_foreach
 
@@ -91,7 +89,7 @@ class Api(Composable[P, R]):
 
     @comp_wrapper
     def partial_filter(data: Iterable[T]) -> Iterable[T]:
-      return filter(lambda x: func(normalize(x)), data)
+      return filter(func, data)
 
     return partial_filter
 
@@ -149,7 +147,7 @@ class Api(Composable[P, R]):
 
     @comp_wrapper
     def partial_flatmap(data: Iterable[Iterable[T]]) -> Iterable[R]:
-      for ys in map(lambda x: func(normalize(x)), data):
+      for ys in map(func, data):
         for y in ys:
           yield y
 
@@ -167,7 +165,7 @@ class Api(Composable[P, R]):
     '''curried version of python's any function. Returns True if any element satisfies the condition'''
     @comp_wrapper
     def partial_any(data: Iterable[T]) -> bool:
-      return any(map(lambda x: func(normalize(x)), data))
+      return any(map(func, data))
 
     return partial_any
 
@@ -177,7 +175,7 @@ class Api(Composable[P, R]):
     '''curried version of python's any function. Returns True if all elements satisfy the condition'''
     @comp_wrapper
     def partial_all(data: Iterable[T]) -> bool:
-      return all(map(lambda x: func(normalize(x)), data))
+      return all(map(func, data))
 
     return partial_all
 
@@ -299,7 +297,7 @@ class Api(Composable[P, R]):
   
   @staticmethod
   @comp_wrapper
-  def flatnest(path_selector:Callable[[Any], Any], data_selector:Callable[[Any], Any] = id_param) -> Callable[[Any], Iterable[Any]]:
+  def flatnest(path_selector:Callable[[Any], Any], data_selector:Callable[[Any], Any]) -> Callable[[Any], Iterable[Any]]:
     
     @comp_wrapper
     def partial_flatnest(model:Any) -> Iterable[Any]:

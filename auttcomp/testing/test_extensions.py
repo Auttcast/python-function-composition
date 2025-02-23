@@ -1,8 +1,6 @@
-from typing import Generator
 from ..extensions import KeyValuePair, Api as f
 from .base_test import get_hugging_face_sample, get_civitai_sample
-from ..quicklog import tracelog, log
-from pprint import pprint
+from ..quicklog import tracelog
 
 @tracelog("test_id")
 def test_id():
