@@ -298,7 +298,7 @@ class Api(Composable[P, R]):
   @staticmethod
   @comp_wrapper
   def flatnest(path_selector:Callable[[Any], Any], data_selector:Callable[[Any], Any]) -> Callable[[Any], Iterable[Any]]:
-    
+    '''yield properties of a recursive structure by data_selector, following the path_selector'''
     @comp_wrapper
     def partial_flatnest(model:Any) -> Iterable[Any]:
       if model is not None:
