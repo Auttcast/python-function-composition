@@ -11,7 +11,7 @@ g(f(x)) == (f | g)(x)
 To achieve inline composition, functions must be wrapped with the Composable object (f)
 
 ```python
-from auttcomp.extensions import Api as f
+from auttcomp.composable import Composable as f
 
 square = f(lambda x: x ** 2)
 add3 = f(lambda x: x + 3)
@@ -25,7 +25,7 @@ assert comp(3) == 12
 If the composition chain starts with a Composable, the rest of the chain is automatically wrapped
 
 ```python
-from auttcomp.extensions import Api as f
+from auttcomp.composable import Composable as f
 
 square = f(lambda x: x ** 2)
 add3 = lambda x: x + 3
@@ -41,7 +41,7 @@ Consider python's map function - map(func, data)
 In this example, & is used to partially apply the square func to map
 
 ```python
-from auttcomp.extensions import Api as f
+from auttcomp.composable import Composable as f
 
 square = lambda x: x ** 2
 pmap = f(map) & square
@@ -49,9 +49,11 @@ pmap = f(map) & square
 assert list(pmap([1, 2, 3])) == [1, 4, 9]
 ```
 
-### Identity functions and invocation with >
+### Extensions Api primer: Identity function and invocation with >
 
-When Composable receives a non-callable type, it constructs an identity function for that data
+The proceeding examples will import the extensions api as f. The api itself is composable, but also contains many extension methods which are commonly used on iterable data structures.
+
+f.id is used to create a composable identity function. You will soon see that this will be the root of our composition pipeline. Conceptually we can think of this as SQL's "select * from table"
 
 ```python
 from auttcomp.extensions import Api as f
@@ -59,20 +61,20 @@ from auttcomp.testing.base_test import get_hugging_face_sample
 
 data = get_hugging_face_sample()
 
-id_func = f(data.models)
+id_func = f.id(data.models)
 just_data_models_again = id_func()
 ```
 
 The data in this sample is a search result from the Hugging Face api. 
 
-We'll explore the data with a query soon, but first we'd like to know about it's structure. It's difficult to understand the structure of the model just by looking at the raw data, so we'll use the f.shape function to help us understand it.
+We'll explore the data with a query soon, but first we'd like to know about it's structure. It is difficult to understand the structure of the model just by looking at the raw data, so we'll use the f.shape function to help us understand it.
 
 The f.shape function accepts any data as input, and prints a summary to the console.
 
-When the invocation operator (>) is used, the identity function on the left is invoked first (returning data), and the data is passed as an argument into f.shape
+When the invocation operator (>) is used, the identity function on the left is invoked first (returning data), and the data is passed as an argument to the next composable function (f.shape)
 
 ```python
-f(data.models) > f.shape
+f.id(data.models) > f.shape
 ```
 
 Result:
@@ -108,13 +110,13 @@ Python already has many common higher order functions (map, filter, reduce, etc)
 
 ```python
 #list the author of each model
-f(data.models) > f(map) & (lambda x: x.authorData) | f(map) & (lambda x: x.name) | list
+f.id(data.models) > f(map) & (lambda x: x.authorData) | f(map) & (lambda x: x.name) | list
 ```
 
 However, for convenience, many common functions have been curried and attached to f. So the same query could also be described as...
 
 ```python
-f(data.models) > f.map(lambda x: x.authorData) | f.map(lambda x: x.name) | list
+f.id(data.models) > f.map(lambda x: x.authorData) | f.map(lambda x: x.name) | list
 ```
 
 or even...
@@ -123,7 +125,7 @@ or even...
 get_author_data = lambda x: x.authorData
 get_name = lambda x: x.name
 comp = f.map & get_author_data | f.map & get_name | list
-f(data.models) > comp
+f.id(data.models) > comp
 ```
 
 ### Example query

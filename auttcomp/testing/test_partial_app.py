@@ -62,3 +62,19 @@ def test_partial_on_no_param_throws():
   except TypeError:
     has_thrown = True
   assert has_thrown
+
+@tracelog("test_partial_and_composition_chain", enable=True)
+def test_partial_and_composition_chain():
+  data = [
+    {"foo": {"bar": 1}},
+    {"foo": {"bar": 2}},
+    {"foo": {"bar": 3}},
+  ]
+
+  sel_foo = f(lambda x: x['foo'])
+  sel_bar = f(lambda x: x['bar'])
+
+  comp = f.map & sel_foo
+  #log(type(comp()(data)))
+  
+  log(f.id(data) > comp)
