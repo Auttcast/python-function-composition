@@ -56,25 +56,20 @@ def test_partial_multi_param_func():
 @tracelog("test_partial_on_no_param_throws")
 def test_partial_on_no_param_throws():
   zero_param_func = f(lambda: "hi")
-  has_thrown = False
+
   try:
     zero_param_func & "1"
+    assert False, "expected to throw!"
   except TypeError:
-    has_thrown = True
-  assert has_thrown
+    pass
+  except Exception:
+    assert False, "unxpected exception"
 
-@tracelog("test_partial_and_composition_chain", enable=True)
-def test_partial_and_composition_chain():
-  data = [
-    {"foo": {"bar": 1}},
-    {"foo": {"bar": 2}},
-    {"foo": {"bar": 3}},
-  ]
-
-  sel_foo = f(lambda x: x['foo'])
-  sel_bar = f(lambda x: x['bar'])
-
-  comp = f.map & sel_foo
-  #log(type(comp()(data)))
+@tracelog("test_partial_on_curried_composable_func", enable=True)
+def test_partial_on_curried_composable_func():
   
-  log(f.id(data) > comp)
+  curried_add = f(lambda x: f(lambda y: x + y))
+
+  curried_add_1 = curried_add & 1
+
+  assert curried_add_1(1) == 2
