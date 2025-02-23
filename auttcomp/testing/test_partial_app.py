@@ -65,7 +65,7 @@ def test_partial_on_no_param_throws():
   except Exception:
     assert False, "wrong exception type"
 
-@tracelog("test_partial_on_curried_composable_func", enable=True)
+@tracelog("test_partial_on_curried_composable_func")
 def test_partial_on_curried_composable_func():
   
   curried_add = f(lambda x: f(lambda y: x + y))
