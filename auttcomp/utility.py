@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from typing import Iterable
 
 def normalize(obj):
-  if isinstance(obj, dict): return SimpleNamespace(**obj)
+  #if isinstance(obj, dict): return SimpleNamespace(**obj)
   return obj
 
 class JsonUtil:
@@ -15,6 +15,9 @@ class ObjUtil:
 
   @staticmethod
   def exec_generator(gen):
+    if isinstance(gen, dict):
+      #note dict is iterable
+      return gen
     if isinstance(gen, Iterable):
       return list(gen)
     else: return gen

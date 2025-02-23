@@ -1,9 +1,8 @@
 from typing import Generator
 from ..extensions import KeyValuePair, Api as f
-from .base_test import get_hugging_face_sample
+from .base_test import get_hugging_face_sample, get_civitai_sample
 from ..quicklog import tracelog, log
-
-data = get_hugging_face_sample()
+from pprint import pprint
 
 @tracelog("test_id")
 def test_id():
@@ -14,7 +13,7 @@ def test_id():
 @tracelog("test_at")
 def test_at():
   data = {"foo": 123}
-  actual = f.at(lambda x: x.foo)(data)
+  actual = f.at(lambda x: x['foo'])(data)
   assert actual == 123
 
 @tracelog("test_map")
@@ -44,10 +43,10 @@ def test_flatmap():
   actual = list(gen)
   assert actual == [1, 1, 1]
 
-@tracelog("test_flatmapid")
-def test_flatmapid():
+@tracelog("test_flatmap_id")
+def test_flatmap_id():
   data = [[1], [1], [1]]
-  gen = f.flatmapid(data)
+  gen = f.flatmap()(data)
   actual = list(gen)
   assert actual == [1, 1, 1]
 
@@ -191,13 +190,13 @@ def test_join():
     (3, (["foo3"], ["bar3"])),
     (4, (["foo4"], ["bar4"]))
   ]
-
+  
   gen = f.join(
-    dataFoo,
-    lambda x: x['foo_id'],
-    lambda x: x['bar_id'],
-    lambda x: x['foo'],
-    lambda x: x['bar']
+    left_data=dataFoo,
+    left_key_func=lambda x: x['foo_id'],
+    right_key_func=lambda x: x['bar_id'],
+    left_value_selector=lambda x: x['foo'],
+    right_value_selector=lambda x: x['bar']
   )(dataBar)
   
   actual = list(gen)
@@ -211,3 +210,76 @@ def test_distinct_set():
   fast_distinct = arr > f.distinct_set
   assert slow_distinct == fast_distinct
 
+
+@tracelog("test_zip")
+def test_zip():
+  data1 = ["a", "b", "c"]
+  data2 = ["A", "B"]
+  expected = [("a", "A"),("b", "B"),("c", None)]
+
+  gen = f.zip(data2)(data1)
+
+  actual = list(gen)
+
+  assert actual == expected
+
+@tracelog("test_flatnest")
+def test_flatnest():
+  data = {
+    "depth": 1,
+    "nest": {
+      "depth": 2,
+      "nest": {
+        "depth": 3,
+        "nest": None
+        }
+      }
+    }
+  
+  expected = [1, 2, 3]
+
+  gen = f.flatnest(
+    path_selector=lambda x: x['nest'], 
+    data_selector=lambda x: x['depth']
+    )(data)
+
+  actual = list(gen)
+
+  assert actual == expected
+
+@tracelog("test_huggingface_sample")
+def test_huggingface_sample():
+  data = get_hugging_face_sample()
+  
+  result = f.id(data.models) > (
+    f.group(lambda x: x.author)
+    | f.map(lambda x: (
+      x.key,
+      f.id(x.value) > f.map(lambda x2: x2.downloads) | sum
+    ))
+    | f.sort_by_desc(lambda x: x[1])
+    | f.take(3)
+    | list
+  )
+
+  assert result == [('black-forest-labs', 1548084), ('deepseek-ai', 1448374), ('microsoft', 264891)]
+
+@tracelog("test_civitai_sample")
+def test_civitai_sample():
+  data = get_civitai_sample()
+
+  most_common_tags = f.id(data.result.data.json.collection.items) > (
+    f.flatmap(lambda x: x.data.tagIds)
+    | f.group()
+    | f.map(lambda x: (
+      x.key,
+      f.id(x.value) > f(len)
+    ))
+    | f.sort_by_desc(lambda x: x[1])
+    | f.map(lambda x: x[0])
+    | f.take(3)
+    | list
+  )
+
+  assert most_common_tags == [292, 81, 5262]
+  

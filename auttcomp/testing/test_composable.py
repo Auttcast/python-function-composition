@@ -13,6 +13,9 @@ with_str = f(lambda x: (x, str(x)))
 str_len = f(lambda x,y: len(y))
 pass_thru = f(lambda x: x)
 
+def pass_many_params(a, b, c, d):
+  return (a, b, c, d)
+
 @tracelog("test_minimal_single_param")
 def test_minimal_single_param():
   assert inc(1) == 2
@@ -90,3 +93,20 @@ def test_dynamic_wrapping():
   avg = lambda r: sum(r) / len(r)  
   func = rf | evens | to_list | avg
   assert func(10) == 5
+
+@tracelog("test_kargs")
+def test_kargs():
+  
+  comp = f(pass_many_params)
+
+  assert comp(1, 2, 3, 4) == (1, 2, 3, 4)  
+  assert comp(a=1, b=2, c=3, d=4) == (1, 2, 3, 4)
+  assert comp(1, 2, c=3, d=4) == (1, 2, 3, 4)
+  assert comp(1, 2, d=4, c=3) == (1, 2, 3, 4)
+
+  comp3 = comp | comp | comp
+  assert comp3(1, 2, d=4, c=3) == (1, 2, 3, 4)
+  
+  def func4to1(a, b, c, d): return (d-c)+(b-a)
+  comp4 = comp | comp | f(func4to1)
+  assert comp4(1, 2, d=4, c=3) == 2

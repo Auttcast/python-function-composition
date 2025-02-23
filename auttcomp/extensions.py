@@ -1,9 +1,9 @@
-from collections import namedtuple
 from .quicklog import log
+from collections import namedtuple
 from .utility import normalize, ObjUtil
 from .shape_eval import eval_shape
 from .composable import Composable, P, R
-from typing import Callable, Any, Tuple, Iterable, TypeVar, Generic
+from typing import Callable, Any, Tuple, Iterable, TypeVar
 from .expression_builder import ExpressionExecutor
 from typing import Callable
 from pprint import pprint
@@ -13,6 +13,9 @@ import itertools
 T = TypeVar('T')
 T2 = TypeVar('T2')
 K = TypeVar('K')
+
+def id_param(x:Any):
+  return x
 
 def comp_wrapper(func:Callable[P, R]) -> Composable[P, R]:
   return Composable(func)
@@ -81,7 +84,7 @@ class Api(Composable[P, R]):
 
   @staticmethod
   @comp_wrapper
-  def filter(func: Callable[[T], R]) -> Callable[[Iterable[T]], Iterable[T]]:
+  def filter(func: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], Iterable[T]]:
     '''curried version of python's filter
     filter(function or None, iterable) --> filter object\n\nReturn an iterator yielding those items of iterable for which function(item)\nis true. If function is None, return the items that are true.
     '''
@@ -141,7 +144,7 @@ class Api(Composable[P, R]):
 
   @staticmethod
   @comp_wrapper
-  def flatmap(func: Callable[[T], R]) -> Callable[[Iterable[Iterable[T]]], Iterable[R]]:
+  def flatmap(func: Callable[[T], R] = id_param) -> Callable[[Iterable[Iterable[T]]], Iterable[R]]:
     '''iterable implementation of flatmap'''
 
     @comp_wrapper
@@ -154,19 +157,13 @@ class Api(Composable[P, R]):
 
   @staticmethod
   @comp_wrapper
-  def flatmapid(data: Iterable[Iterable[T]]) -> Iterable[T]:
-    '''shortcut for flatmap(identity func)'''
-    return Api.flatmap(lambda x: x)(data)
-
-  @staticmethod
-  @comp_wrapper
   def shape(data: Any) -> Any:
     '''evaluates the shape of data, returns a shape object'''
     return eval_shape(data)
 
   @staticmethod
   @comp_wrapper
-  def any(func: Callable[[T], R]) -> Callable[[Iterable[T]], bool]:
+  def any(func: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], bool]:
     '''curried version of python's any function. Returns True if any element satisfies the condition'''
     @comp_wrapper
     def partial_any(data: Iterable[T]) -> bool:
@@ -176,7 +173,7 @@ class Api(Composable[P, R]):
 
   @staticmethod
   @comp_wrapper
-  def all(func: Callable[[T], R]) -> Callable[[Iterable[T]], bool]:
+  def all(func: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], bool]:
     '''curried version of python's any function. Returns True if all elements satisfy the condition'''
     @comp_wrapper
     def partial_all(data: Iterable[T]) -> bool:
@@ -251,7 +248,7 @@ class Api(Composable[P, R]):
 
   @staticmethod
   @comp_wrapper
-  def group(func: Callable[[T], K]) -> Callable[[Iterable[T]], Iterable[KeyValuePair[K, Iterable[T]]]]:
+  def group(func: Callable[[T], K] = id_param) -> Callable[[Iterable[T]], Iterable[KeyValuePair[K, Iterable[T]]]]:
     '''curried version of itertools.groupby
     sort by key is used before grouping to achieve singular grouping
     f.groupby(lambda x.property)
@@ -271,8 +268,8 @@ class Api(Composable[P, R]):
     left_data: Iterable[T],
     left_key_func: Callable[[T], K],
     right_key_func: Callable[[T], K],
-    left_value_selector: Callable[[T], Any],
-    right_value_selector: Callable[[T], Any]
+    left_value_selector: Callable[[T], Any] = id_param,
+    right_value_selector: Callable[[T], Any] = id_param
   ) -> Callable[[T2], Iterable[Tuple[K, Tuple[T, T2]]]]:
     '''(inner join) combine two groups by key'''
 
@@ -291,4 +288,24 @@ class Api(Composable[P, R]):
 
     return partial_join
 
+  @staticmethod
+  @comp_wrapper
+  def zip(data:Iterable[T]) -> Callable[[Iterable[T2]], Iterable[Tuple[T2, T]]]:
+    '''curried version of itertools.zip_longest'''
+    @comp_wrapper
+    def partial_zip(data2: Iterable[T2]) -> Iterable[Tuple[T2, T]]:
+      return itertools.zip_longest(data2, data)
+    return partial_zip
   
+  @staticmethod
+  @comp_wrapper
+  def flatnest(path_selector:Callable[[Any], Any], data_selector:Callable[[Any], Any] = id_param) -> Callable[[Any], Iterable[Any]]:
+    
+    @comp_wrapper
+    def partial_flatnest(model:Any) -> Iterable[Any]:
+      if model is not None:
+        yield data_selector(model)
+        next = path_selector(model)
+        if next is not None:
+          yield from partial_flatnest(next)
+    return partial_flatnest

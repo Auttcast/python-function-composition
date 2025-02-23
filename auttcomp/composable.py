@@ -37,7 +37,28 @@ class Composable(Generic[P, R]):
 
     return new_comp
 
+  def __get_bound_args(sig, args, kwargs):
+    bound = sig.bind_partial(*args, **kwargs)
+    bound.apply_defaults()
+    return bound.args
+
+  @staticmethod
+  def __get_sig_recurse(func):
+    if isinstance(func, Composable):
+      return Composable.__get_sig_recurse(func.f)
+    else:
+      return inspect.signature(func)
+
+  __sig = None
+  def __get_singleton_sig_f(self):
+    return self.__sig if self.__sig is not None else Composable.__get_sig_recurse(self.f)
+
   def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
+
+    hasKwargs = len(kwargs.keys()) > 0
+    if hasKwargs:
+      sig = self.__get_singleton_sig_f()
+      args = Composable.__get_bound_args(sig, args, kwargs)
 
     result = Composable.__internal_call(self.f, self.g, args)
     is_single_tuple = type(result) == tuple and len(result) == 1
