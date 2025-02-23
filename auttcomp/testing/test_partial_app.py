@@ -63,7 +63,7 @@ def test_partial_on_no_param_throws():
   except TypeError:
     pass
   except Exception:
-    assert False, "unxpected exception"
+    assert False, "wrong exception type"
 
 @tracelog("test_partial_on_curried_composable_func", enable=True)
 def test_partial_on_curried_composable_func():

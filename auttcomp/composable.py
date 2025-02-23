@@ -1,5 +1,6 @@
 from typing import Callable, Concatenate, Optional, ParamSpec, TypeVar, Generic
 import inspect
+from .quicklog import log
 
 _INV_R_TYPE_PACK = {type((1,)), type(None)}
 
@@ -59,7 +60,7 @@ class Composable(Generic[P, R]):
     if hasKwargs:
       sig = self.__get_singleton_sig_f()
       args = Composable.__get_bound_args(sig, args, kwargs)
-
+    
     result = Composable.__internal_call(self.f, self.g, args)
     is_single_tuple = type(result) == tuple and len(result) == 1
     is_terminating = not self.__chained and Composable.__is_terminating(self.f, self.g)
@@ -115,6 +116,7 @@ class Composable(Generic[P, R]):
 
   #partial application operator
   def __and__(self:Callable[Concatenate[A, P2], R2], param:A) -> Callable[P2, R2]:
+    #log(len(P2.args) + (len(P2.kwargs)) + 1)
     return Composable._PartialApp._part_apply(self, param)
 
   class _PartialApp:
@@ -122,10 +124,10 @@ class Composable(Generic[P, R]):
     @staticmethod
     def _part_apply(func, param):
       self_arg_count = Composable._PartialApp.__get_param_count(func)
-      return Composable._PartialApp.__apply_inline(func, param, self_arg_count)
+      return Composable._PartialApp.__bind(func, param, self_arg_count)
 
     @staticmethod
-    def __apply_inline(func, param, arg_count):
+    def __bind(func, param, arg_count):
       match arg_count:
         case 1: return Composable(lambda: func(param))
         case 2: return Composable(lambda x: func(param, x))
