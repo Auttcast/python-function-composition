@@ -57,21 +57,11 @@ class Composable(Generic[P, R]):
 
   def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
 
-    sig = self.__get_singleton_sig_f()
-    sig_arg_count = len(sig.parameters.keys())
-    call_arg_count = len(args) + len(kwargs)
-    zero_param_curry = sig_arg_count == 0 and call_arg_count > 0
-    
-    target_f = self.f
-    if zero_param_curry:
-      target_f = self.f()
-      assert isinstance(target_f, Callable)
-
-    hasKwargs = len(kwargs.keys()) > 0
-    if hasKwargs:
+    if len(kwargs.keys()) > 0:
+      sig = self.__get_singleton_sig_f()
       args = Composable.__get_bound_args(sig, args, kwargs)
     
-    result = Composable.__internal_call(target_f, self.g, args)
+    result = Composable.__internal_call(self.f, self.g, args)
     is_single_tuple = type(result) == tuple and len(result) == 1
     is_terminating = not self.__chained and Composable.__is_terminating(self.f, self.g)
     should_unpack_result = is_terminating and is_single_tuple
