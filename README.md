@@ -137,7 +137,7 @@ f.shape will be used to show the result of the query at each stage.
 First, group by author
 
 ```python
-f(data.models) > f.group(lambda x: x.author) | list | f.shape
+f.id(data.models) > f.group(lambda x: x.author) | list | f.shape
 ```
 ```python
 [ { 'key': 'str',
@@ -169,11 +169,11 @@ Next, map to tuple of (key, sum_downloads)
 
 ```python
 (
-  f(data.models)
+  f.id(data.models)
   > f.group(lambda x: x.author)
   | f.map(lambda g: (
       g.key,
-      f(g.value) > f.map(lambda x: x.downloads) | sum
+      f.id(g.value) > f.map(lambda x: x.downloads) | sum
   ))
   | list 
   | f.shape
@@ -187,13 +187,13 @@ Finally, sort by descending downloads and take the top 5 results
 
 ```python
 (
-  f(data.models)
+  f.id(data.models)
   > f.group(lambda x: x.author)
   | f.map(lambda g: (
     g.key,
-    f(g.value) > f.map(lambda x: x.downloads) | sum
+    f.id(g.value) > f.map(lambda x: x.downloads) | sum
   ))
-  | f.sort_by_descending(lambda x: x[1])
+  | f.sort_by_desc(lambda x: x[1])
   | f.take(5)
   | list
 )
