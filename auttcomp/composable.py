@@ -65,7 +65,6 @@ class Composable(Generic[P, R]):
     if zero_param_curry:
       target_f = self.f()
       assert isinstance(target_f, Callable)
-      #assert args of target_f ?
 
     hasKwargs = len(kwargs.keys()) > 0
     if hasKwargs:
@@ -126,18 +125,13 @@ class Composable(Generic[P, R]):
 
   #partial application operator
   def __and__(self:Callable[Concatenate[A, P2], R2], param:A) -> Callable[P2, R2]:
-    #log(len(P2.args) + (len(P2.kwargs)) + 1)
-    return Composable._PartialApp._part_apply(self, param)
+    arg_count = len(self.__get_singleton_sig_f().parameters)
+    return Composable._PartialApp._bind(self, param, arg_count)
 
   class _PartialApp:
 
     @staticmethod
-    def _part_apply(func, param):
-      self_arg_count = Composable._PartialApp.__get_param_count(func)
-      return Composable._PartialApp.__bind(func, param, self_arg_count)
-
-    @staticmethod
-    def __bind(func, param, arg_count):
+    def _bind(func, param, arg_count):
       match arg_count:
         case 1: return Composable(lambda: func(param))
         case 2: return Composable(lambda x: func(param, x))
@@ -148,16 +142,6 @@ class Composable(Generic[P, R]):
         case 7: return Composable(lambda x1, x2, x3, x4, x5, x6: func(param, x1, x2, x3, x4, x5, x6))
         case 8: return Composable(lambda x1, x2, x3, x4, x5, x6, x7: func(param, x1, x2, x3, x4, x5, x6, x7))
         case _: raise TypeError(f"unsupported argument count {arg_count}")
-
-    @staticmethod
-    def __get_param_count(func):
-      if isinstance(func, Composable):
-        return Composable._PartialApp.__get_param_count(func.f)
-      
-      if inspect.isclass(func): 
-        return len(inspect.signature(func.__call__).parameters)
-      
-      return len(inspect.signature(func).parameters)
 
   #invocation operator
   def __lt__(next_func:Callable[[IT], IR], id_func:Callable[[], IT]):
