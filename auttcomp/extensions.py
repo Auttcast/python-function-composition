@@ -3,7 +3,6 @@ from .utility import ObjUtil
 from .shape_eval import eval_shape
 from .composable import Composable, P, R
 from typing import Callable, Any, Tuple, Iterable, TypeVar
-from .expression_builder import ExpressionExecutor
 from typing import Callable
 import functools
 import itertools
@@ -40,18 +39,6 @@ class Api(Composable[P, R]):
       return func(obj)
 
     return partial_at
-
-  @staticmethod
-  @Composable
-  def select(func: Callable[[T], R]) -> Callable[[T], R]:
-    '''EXPERIMENTAL (basically working like select/map right now)'''
-    exp = ExpressionExecutor(func)
-
-    @Composable
-    def partial_select(obj: T) -> R:
-      return exp(obj)
-
-    return partial_select
 
   @staticmethod
   @Composable
