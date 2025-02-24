@@ -5,7 +5,7 @@ import io
 
 class ShapeNode:
   def __init__(self, container_type: Union[list | dict | str | tuple | None]=None, value:str=None, parent=None):
-    self.containerType : Union[list|dict|str|tuple|None] = container_type
+    self.container_type : Union[list|dict|str|tuple|None] = container_type
     self.value : str = value
     self.parent:ShapeNode = parent
     self.children:list[ShapeNode] = []
@@ -13,8 +13,8 @@ class ShapeNode:
     self.is_null_val = False
 
   def get_nullable_container_name(self):
-    if self.is_null_val: return f"{self.containerType}?"
-    return self.containerType
+    if self.is_null_val: return f"{self.container_type}?"
+    return self.container_type
 
   def add_child(self, node) -> Self:
     node.parent = self
@@ -24,7 +24,7 @@ class ShapeNode:
   def has_child_with_container(self, raw_type, out_param:list):
     if self.children is None: return False
     for c in self.children:
-      if c.containerType == raw_type:
+      if c.container_type == raw_type:
         out_param.append(c)
         return True
 
@@ -76,7 +76,7 @@ class NodeWriter:
         self.current_node.add_child(node)
 
 def get_path_to_node_recurse(node):
-  yield node.containerType
+  yield node.container_type
   if node.parent is not None:
     get_path_to_node_recurse(node.parent)
 
@@ -89,25 +89,24 @@ def node_graph_to_obj_dict_key_eval(parent_node:ShapeNode, set_any_type=False) -
   if len(nodes) == 1: return node_graph_to_obj(nodes[0], set_any_type)
   else:
     not_none = lambda x: x is not None
-    node_values = list(map(lambda x: x.value, nodes))
-    node_cont = list(map(lambda x: x.containerType, nodes))
-    values = list(filter(not_none, node_values))
-    containers = list(filter(not_none, node_cont))
+    range_values = list(map(lambda x: x.value, nodes))
+    range_containers = list(map(lambda x: x.container_type, nodes))
+    values = list(filter(not_none, range_values))
+    containers = list(filter(not_none, range_containers))
     has_primitives = any(values)
     has_containers = any(containers)
 
     if is_nullable_container:
-      nodes_without_none_type = list(filter(lambda x: x.containerType is not None, nodes))
+      nodes_without_none_type = list(filter(lambda x: x.container_type is not None, nodes))
       if len(nodes_without_none_type) == 1:
         return node_graph_to_obj(nodes_without_none_type[0], set_any_type)
 
     if has_primitives and not has_containers:
       if is_nullable_container:
         #when the container is "nullable?", we won't bother specifying None in the property
-        vals = list(filter(lambda x: x is not None, node_values))
-        return "|".join(vals)
+        return "|".join(values)
       else:
-        return "|".join(node_values)
+        return "|".join(range_values)
 
     path = get_path_to_node(nodes[0].parent.parent)
     key = nodes[0].parent
@@ -117,10 +116,12 @@ def node_graph_to_obj_dict_key_eval(parent_node:ShapeNode, set_any_type=False) -
       #in the case a dictionary has keys of differing types (other than None),
       #will issue a warning and continue processing with the container
       sys.stderr.writelines(f"WARNING: {path} dictionary key {key} contains both primitives and values: {str_rep}")
-      return "|".join(node_values + node_cont)
+      return "|".join(range_values + range_containers)
     elif not has_primitives and has_containers:
       sys.stderr.writelines(f"ERROR: {path} dictionary key {key} contains both array and dictionary accessors: {str_rep}")
-      return "|".join(node_cont)
+      return "|".join(range_containers)
+    
+    raise Exception("unexpected path")
 
 #NOTE: recurse with nodeGraphToObj_dictKeyEval
 def node_graph_to_obj(node:ShapeNode, set_any_type=False) -> Any :
@@ -129,12 +130,14 @@ def node_graph_to_obj(node:ShapeNode, set_any_type=False) -> Any :
       return 'Any'
     else:
       return node.value
-  if isinstance(node.containerType, dict):
+  if isinstance(node.container_type, dict):
     return {c.get_nullable_container_name(): node_graph_to_obj_dict_key_eval(c, set_any_type) for c in node.children}
-  if isinstance(node.containerType, list):
+  if isinstance(node.container_type, list):
     return [node_graph_to_obj(c, set_any_type) for c in node.children]
-  if isinstance(node.containerType, tuple):
+  if isinstance(node.container_type, tuple):
     return tuple([node_graph_to_obj(c, set_any_type) for c in sorted(node.children, key=lambda x: x.tuple_index)])
+  
+  raise Exception("unexpected path")
 
 
 def dict_kv(obj):
