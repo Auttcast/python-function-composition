@@ -6,9 +6,9 @@ from ..extensions import Api as f
 @tracelog("test_partial_1_param_func")
 def test_partial_1_param_func():
   cat1 = f(lambda x: "0" + x)
-  get = cat1 & "1"
-  assert isinstance(get, Composable)
-  assert get() == "01"
+  result = cat1 & "1"
+  assert isinstance(result, str)
+  assert result == "01"
 
 @tracelog("test_partial_2_param_func")
 def test_partial_2_param_func():
@@ -17,11 +17,11 @@ def test_partial_2_param_func():
   get1 = cat2 & "1"
   assert get1("2") == "012"
 
-  get2 = get1 & "2"
-  assert get2() == "012"
+  result1 = get1 & "2"
+  assert result1 == "012"
 
-  get = cat2 & "1" & "2"
-  assert get() == "012"
+  result2 = cat2 & "1" & "2"
+  assert result2 == "012"
 
 @tracelog("test_partial_3_param_func")
 def test_partial_multi_param_func():
@@ -94,5 +94,16 @@ def test_partial_callable_class():
   expected = [2, 3, 4]
 
   actual = list(plus1(data))
+
+  assert actual == expected
+
+@tracelog("test_partial_callable_class_2")
+def test_partial_callable_class():
+  
+  data = [1, 2, 3]
+  plus2 = f(map) & (lambda x: x + 1) | f(map) & (lambda x: x + 1)
+  expected = [3, 4, 5]
+
+  actual = list(plus2(data))
 
   assert actual == expected

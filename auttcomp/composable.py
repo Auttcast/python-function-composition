@@ -1,6 +1,5 @@
 from typing import Callable, Concatenate, Optional, ParamSpec, TypeVar, Generic
 import inspect
-from .quicklog import log
 
 _INV_R_TYPE_PACK = {type((1,)), type(None)}
 
@@ -135,7 +134,7 @@ class Composable(Generic[P, R]):
     @staticmethod
     def _bind(func, param, arg_count):
       match arg_count:
-        case 1: return Composable(lambda: func(param))
+        case 1: return Composable(lambda: func(param))()
         case 2: return Composable(lambda x: func(param, x))
         case 3: return Composable(lambda x1, x2: func(param, x1, x2))
         case 4: return Composable(lambda x1, x2, x3: func(param, x1, x2, x3))
