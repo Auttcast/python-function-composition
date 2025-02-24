@@ -74,6 +74,18 @@ def test_partial_on_curried_composable_func():
 
   assert curried_add_1(1) == 2
   
+@tracelog("test_partial_on_curried_composable_func_with_composition")
+def test_partial_on_curried_composable_func_with_composition():
+  
+  data = [1, 2, 3]
+  plus2comp = f.map & (lambda x: x + 1) | f.map & (lambda x: x + 1) | list
+  expected = [3, 4, 5]
+
+  actual = plus2comp(data)
+
+  assert actual == expected
+
+  
 @tracelog("test_partial_callable_class")
 def test_partial_callable_class():
   
