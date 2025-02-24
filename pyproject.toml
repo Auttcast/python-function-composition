@@ -7,7 +7,7 @@ exclude = ["testing*"]
 
 [project]
 name = "auttcomp"
-version = "1.0.1"
+version = "2.0.0"
 authors = [
   { name="Brandon McCartney", email="auttcast@gmail.com" },
 ]
