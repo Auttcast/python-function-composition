@@ -2,8 +2,8 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.setuptools.packages.find]
-exclude = ["testing*"]
+#[tool.setuptools.packages.find]
+#exclude = ["testing*"]
 
 [project]
 name = "auttcomp"
@@ -11,7 +11,7 @@ version = "2.0.0"
 authors = [
   { name="Brandon McCartney", email="auttcast@gmail.com" },
 ]
-description = "in-line functional composition"
+description = "framework for in-line functional composition, iterable extensions similar to LINQ, and complex object evaluation"
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
