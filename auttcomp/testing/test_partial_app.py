@@ -74,10 +74,13 @@ def test_partial_on_curried_composable_func():
 
   assert curried_add_1(1) == 2
   
-@tracelog("test_partial_on_internal_map")
-def test_partial_on_internal_map():
+@tracelog("test_partial_callable_class")
+def test_partial_callable_class():
   
-  f(map) & (lambda x: x)
-  #does not throw
-  #inspect.signature is unable to read some builtin funcs
-  
+  data = [1, 2, 3]
+  plus1 = f(map) & (lambda x: x + 1)
+  expected = [2, 3, 4]
+
+  actual = list(plus1(data))
+
+  assert actual == expected

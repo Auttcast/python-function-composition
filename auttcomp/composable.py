@@ -48,6 +48,8 @@ class Composable(Generic[P, R]):
     if isinstance(func, Composable):
       return Composable.__get_sig_recurse(func.f)
     else:
+      if inspect.isclass(func):
+        return inspect.signature(func.__call__)
       return inspect.signature(func)
 
   __sig = None
