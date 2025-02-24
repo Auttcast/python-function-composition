@@ -73,3 +73,11 @@ def test_partial_on_curried_composable_func():
   curried_add_1 = curried_add & 1
 
   assert curried_add_1(1) == 2
+  
+@tracelog("test_partial_on_internal_map")
+def test_partial_on_internal_map():
+  
+  f(map) & (lambda x: x)
+  #does not throw
+  #inspect.signature is unable to read some builtin funcs
+  
