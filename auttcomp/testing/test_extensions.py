@@ -237,13 +237,63 @@ def test_flatnest():
   expected = [1, 2, 3]
 
   gen = f.flatnest(
-    path_selector=lambda x: x['nest'], 
+    path_selector=lambda x: x['nest'],
     data_selector=lambda x: x['depth']
     )(data)
 
   actual = list(gen)
 
   assert actual == expected
+
+@tracelog("test_first")
+def test_first():
+  data = [1, 1, 5]
+
+  expected = 1
+
+  actual = f.first(lambda x: x == 1)(data)
+
+  assert actual == expected
+
+@tracelog("test_first_none_if_no_match")
+def test_first_none_if_no_match():
+  data = [1, 1, 5]
+
+  expected = None
+
+  actual = f.first(lambda x: x == 10)(data)
+
+  assert actual == expected
+
+@tracelog("test_single")
+def test_single():
+  data = [1, 1, 5]
+
+  expected = 5
+
+  actual = f.single(lambda x: x == 5)(data)
+
+  assert actual == expected
+
+@tracelog("test_single_throw_if_more_than_one")
+def test_single_throw_if_more_than_one():
+  data = [1, 1, 5]
+
+  try:
+    f.single(lambda x: x == 1)(data)
+    raise AssertionError("expected to throw ValueError because selector matches multiple items")
+  except ValueError:
+    pass
+
+@tracelog("test_single_throw_if_no_match")
+def test_single_throw_if_no_match():
+  data = [1, 1, 5]
+
+  try:
+    f.single(lambda x: x == 10)(data)
+    raise AssertionError("expected to throw ValueError because selector matches no items")
+  except ValueError:
+    pass
 
 @tracelog("test_huggingface_sample")
 def test_huggingface_sample():
@@ -280,4 +330,3 @@ def test_civitai_sample():
   )
 
   assert most_common_tags == [292, 81, 5262]
-  

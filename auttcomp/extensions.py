@@ -298,3 +298,45 @@ class Api(Composable[P, R]):
           yield from partial_flatnest(next)
           
     return partial_flatnest
+
+  @staticmethod
+  @Composable
+  def first(selector:Callable[[Any], Any]) -> Callable[[Iterable[Any]], Any]:
+    '''return the first item found by the selector or None if not found'''
+
+    @Composable
+    def partial_first(data:Iterable[Any]):
+      for item in data:
+        if selector(item):
+          return item
+      return None
+    
+    return partial_first
+  
+  @staticmethod
+  @Composable
+  def single(selector:Callable[[Any], Any]) -> Callable[[Iterable[Any]], Any]:
+    '''return a single item determined by the selector and assert that a single item is matched.
+    Throws ValueError if the selector matches no items, or more than one item.
+    '''
+
+    @Composable
+    def partial_single(data:Iterable[Any]):
+
+      found = []
+
+      for item in data:
+        if len(found) == 0:
+          if selector(item):
+            found.append(item)
+        else:
+          if selector(item):
+            raise ValueError("more than one item found")
+      
+      if len(found) == 1:
+        return found[0]
+      
+      raise ValueError("no items were found")
+  
+    return partial_single
+  
