@@ -301,7 +301,7 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def first(selector:Callable[[Any], Any]) -> Callable[[Iterable[Any]], Any]:
+    def first(selector:Callable[[Any], Any] = id_param) -> Callable[[Iterable[Any]], Any]:
         '''return the first item found by the selector or None if not found'''
 
         @Composable
@@ -315,7 +315,7 @@ class Api(Composable[P, R]):
     
     @staticmethod
     @Composable
-    def single(selector:Callable[[Any], Any]) -> Callable[[Iterable[Any]], Any]:
+    def single(selector:Callable[[Any], Any] = id_param) -> Callable[[Iterable[Any]], Any]:
         '''return a single item determined by the selector and assert that a single item is matched.
         Throws ValueError if the selector matches no items, or more than one item.
         '''
