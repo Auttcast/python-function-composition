@@ -1,4 +1,4 @@
-from typing import Callable, Concatenate, Optional, ParamSpec, TypeVar, Generic
+from typing import Any, Callable, Concatenate, Optional, ParamSpec, TypeVar, Generic
 import inspect
 
 _INV_R_TYPE_PACK = {type((1,)), type(None)}
@@ -6,6 +6,7 @@ _INV_R_TYPE_PACK = {type((1,)), type(None)}
 #composable
 P = ParamSpec('P')
 R = TypeVar('R')
+OR = TypeVar('OR')
 
 #partial app
 P2 = ParamSpec('P2')
@@ -19,21 +20,21 @@ IR = TypeVar('IR')
 class Composable(Generic[P, R]):
 
     def __init__(self, func:Callable[P, R]):
-        self.f:Callable[P, R] = func
-        self.g = None
+        self.__f:Callable[P, R] = func
+        self.__g = None
         self.__chained = False
 
     #composition operator
-    def __or__(self, other):
+    def __or__(self, other:Callable[[Any], OR]) -> Callable[P, OR]:
         if not isinstance(other, Composable):
             other = Composable(other)
 
         new_comp = Composable(self)
         self.__chained = True
         new_comp.__chained = False
-        other_comp = Composable(other.f)
+        other_comp = Composable(other.__f)
         other_comp.__chained = True
-        new_comp.g = other_comp
+        new_comp.__g = other_comp
 
         return new_comp
 
@@ -45,7 +46,7 @@ class Composable(Generic[P, R]):
     @staticmethod
     def __get_sig_recurse(func):
         if isinstance(func, Composable):
-            return Composable.__get_sig_recurse(func.f)
+            return Composable.__get_sig_recurse(func.__f)
         else:
             if inspect.isclass(func):
                 return inspect.signature(func.__call__)
@@ -53,7 +54,7 @@ class Composable(Generic[P, R]):
 
     __sig = None
     def __get_singleton_sig_f(self):
-        return self.__sig if self.__sig is not None else Composable.__get_sig_recurse(self.f)
+        return self.__sig if self.__sig is not None else Composable.__get_sig_recurse(self.__f)
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
 
@@ -61,9 +62,9 @@ class Composable(Generic[P, R]):
             sig = self.__get_singleton_sig_f()
             args = Composable.__get_bound_args(sig, args, kwargs)
         
-        result = Composable.__internal_call(self.f, self.g, args)
+        result = Composable.__internal_call(self.__f, self.__g, args)
         is_single_tuple = type(result) == tuple and len(result) == 1
-        is_terminating = not self.__chained and Composable.__is_terminating(self.f, self.g)
+        is_terminating = not self.__chained and Composable.__is_terminating(self.__f, self.__g)
         should_unpack_result = is_terminating and is_single_tuple
 
         if should_unpack_result:
@@ -135,6 +136,6 @@ class Composable(Generic[P, R]):
                 case _: raise TypeError(f"unsupported argument count {arg_count}")
 
     #invocation operator
-    def __lt__(next_func:Callable[[IT], IR], id_func:Callable[[], IT]):
+    def __lt__(next_func:Callable[[IT], IR], id_func:Callable[[], IT]) -> IR:
         return next_func(id_func())
         
