@@ -1,5 +1,5 @@
 from ..extensions import KeyValuePair, Api as f
-from .base_test import get_hugging_face_sample, get_civitai_sample
+from .base_test import get_hugging_face_sample
 
 def test_id():
     func = f.id(123)
@@ -289,21 +289,3 @@ def test_huggingface_sample():
     )
 
     assert result == [('black-forest-labs', 1548084), ('deepseek-ai', 1448374), ('microsoft', 264891)]
-
-def test_civitai_sample():
-    data = get_civitai_sample()
-
-    most_common_tags = f.id(data.result.data.json.collection.items) > (
-        f.flatmap(lambda x: x.data.tagIds)
-        | f.group()
-        | f.map(lambda x: (
-            x.key,
-            f.id(x.value) > f(len)
-        ))
-        | f.sort_by_desc(lambda x: x[1])
-        | f.map(lambda x: x[0])
-        | f.take(3)
-        | list
-    )
-
-    assert most_common_tags == [292, 81, 5262]

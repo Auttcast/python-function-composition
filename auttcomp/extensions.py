@@ -1,6 +1,5 @@
 from collections import namedtuple
 from .utility import ObjUtil
-from .shape_eval import eval_shape
 from .composable import Composable, P, R
 from typing import Callable, Any, Tuple, Iterable, TypeVar
 from typing import Callable
@@ -127,12 +126,6 @@ class Api(Composable[P, R]):
                     yield y
 
         return partial_flatmap
-
-    @staticmethod
-    @Composable
-    def shape(data: Any) -> Any:
-        '''evaluates the shape of data, returns a shape object'''
-        return eval_shape(data)
 
     @staticmethod
     @Composable
