@@ -1,67 +1,56 @@
 from ..extensions import KeyValuePair, Api as f
 from .base_test import get_hugging_face_sample, get_civitai_sample
-from ..quicklog import tracelog
 
-@tracelog("test_id")
 def test_id():
     func = f.id(123)
     actual = func()
     assert actual == 123
 
-@tracelog("test_at")
 def test_at():
     data = {"foo": 123}
     actual = f.at(lambda x: x['foo'])(data)
     assert actual == 123
 
-@tracelog("test_map")
 def test_map():
     data = [1, 2, 3]
     gen = f.map(lambda x: x + 1)(data)
     actual = list(gen)
     assert actual == [2, 3, 4]
 
-@tracelog("test_filter")
 def test_filter():
     data = [1, 2, 3]
     gen = f.filter(lambda x: x % 2 == 0)(data)
     actual = list(gen)
     assert actual == [2]
 
-@tracelog("test_reduce")
 def test_reduce():
     data = [2, 2, 2]
     actual = f.reduce(lambda p, n: p + n)(data)
     assert actual == 6
 
-@tracelog("test_reduce_initial")
 def test_reduce_initial():
     data = [2, 2, 2]
     actual = f.reduce(lambda p, n: p + n, 2)(data)
     assert actual == 8
 
-@tracelog("test_flatmap")
 def test_flatmap():
     data = [[1], [1], [1]]
     gen = f.flatmap(lambda x: x)(data)
     actual = list(gen)
     assert actual == [1, 1, 1]
 
-@tracelog("test_flatmap_id")
 def test_flatmap_id():
     data = [[1], [1], [1]]
     gen = f.flatmap()(data)
     actual = list(gen)
     assert actual == [1, 1, 1]
 
-@tracelog("test_reverse")
 def test_reverse():
     data = [1, 2, 3]
     gen = f.reverse(data)
     actual = list(gen)
     assert actual == [3, 2, 1]
 
-@tracelog("test_any")
 def test_any():
     data1 = [0, 0, 0]
     data2 = [0, 0, 111]
@@ -72,7 +61,6 @@ def test_any():
     assert actual1 == False
     assert actual2 == True
 
-@tracelog("test_all")
 def test_all():
     data1 = [0, 0, 0]
     data2 = [0, 0, 111]
@@ -83,14 +71,12 @@ def test_all():
     assert actual1 == True
     assert actual2 == False
     
-@tracelog("test_sort")
 def test_sort():
     data = [2, 3, 1]
     gen = f.sort(data)
     actual = list(gen)
     assert actual == [1, 2, 3]
 
-@tracelog("test_sort_by")
 def test_sort_by():
     data = [
         {"id": 2},
@@ -109,7 +95,6 @@ def test_sort_by():
 
     assert actual == expected
 
-@tracelog("test_sort_by_desc")
 def test_sort_by_desc():
     data = [
         {"id": 2},
@@ -128,21 +113,18 @@ def test_sort_by_desc():
 
     assert actual == expected
 
-@tracelog("test_take")
 def test_take():
     data = [1, 2, 3]
     gen = f.take(2)(data)
     actual = list(gen)
     assert actual == [1, 2]
 
-@tracelog("test_skip")
 def test_skip():
     data = [1, 2, 3]
     gen = f.skip(1)(data)
     actual = list(gen)
     assert actual == [2, 3]
 
-@tracelog("test_group")
 def test_group():
     data = [
         {"id": 1, "tag": "TAG1"},
@@ -169,7 +151,6 @@ def test_group():
     assert actual == expected
 
 
-@tracelog("test_join")
 def test_join():
 
     dataFoo = [
@@ -207,7 +188,6 @@ def test_join():
 
     assert actual == expected
 
-@tracelog("test_distinct_set")
 def test_distinct_set():
     arr = f.id([1, 2, 3, 3, 3, 3])
     slow_distinct = arr > f.distinct
@@ -215,7 +195,6 @@ def test_distinct_set():
     assert slow_distinct == fast_distinct
 
 
-@tracelog("test_zip")
 def test_zip():
     data1 = ["a", "b", "c"]
     data2 = ["A", "B"]
@@ -227,7 +206,6 @@ def test_zip():
 
     assert actual == expected
 
-@tracelog("test_flatnest")
 def test_flatnest():
     data = {
         "depth": 1,
@@ -251,7 +229,6 @@ def test_flatnest():
 
     assert actual == expected
 
-@tracelog("test_first")
 def test_first():
     data = [1, 1, 5]
 
@@ -261,7 +238,6 @@ def test_first():
 
     assert actual == expected
 
-@tracelog("test_first_none_if_no_match")
 def test_first_none_if_no_match():
     data = [1, 1, 5]
 
@@ -271,7 +247,6 @@ def test_first_none_if_no_match():
 
     assert actual == expected
 
-@tracelog("test_single")
 def test_single():
     data = [1, 1, 5]
 
@@ -281,7 +256,6 @@ def test_single():
 
     assert actual == expected
 
-@tracelog("test_single_throw_if_more_than_one")
 def test_single_throw_if_more_than_one():
     data = [1, 1, 5]
 
@@ -291,7 +265,6 @@ def test_single_throw_if_more_than_one():
     except ValueError:
         pass
 
-@tracelog("test_single_throw_if_no_match")
 def test_single_throw_if_no_match():
     data = [1, 1, 5]
 
@@ -301,7 +274,6 @@ def test_single_throw_if_no_match():
     except ValueError:
         pass
 
-@tracelog("test_huggingface_sample")
 def test_huggingface_sample():
     data = get_hugging_face_sample()
     
@@ -318,7 +290,6 @@ def test_huggingface_sample():
 
     assert result == [('black-forest-labs', 1548084), ('deepseek-ai', 1448374), ('microsoft', 264891)]
 
-@tracelog("test_civitai_sample")
 def test_civitai_sample():
     data = get_civitai_sample()
 

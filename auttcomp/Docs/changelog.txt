@@ -1,6 +1,7 @@
 3.0.0
 replaced reduce2 with reduce optional arg
 added ext functions single, first
+removed quicklog
 
 2.0.1
 Identity functions are no longer created using Composable directly, instead the .id extension method was added.
