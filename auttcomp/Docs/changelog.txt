@@ -1,0 +1,12 @@
+3.0.0
+replaced reduce2 with reduce optional arg
+added ext functions single, first
+
+2.0.1
+Identity functions are no longer created using Composable directly, instead the .id extension method was added.
+Experimental function .select was moved to an experimental branch
+License was changed from MIT to GPLv3
+Unit tests were cleaned up, focusing more on primitives and less on the complex data samples
+Improvements were made to the .shape function, correcting the display of tuples, and added a notation for nullable properties in the format "propertyName?". As this makes it more clear when a dictionary or array property is nullable.
+.flatmapid() was removed, instead flatmap() with no parameters should be used. Several functions now support the same defaulting identity function.
+Added .zip and .flatnest extensions
