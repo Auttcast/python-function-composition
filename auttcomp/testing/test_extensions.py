@@ -35,7 +35,7 @@ def test_reduce():
     assert actual == 6
 
 @tracelog("test_reduce_initial")
-def test_reduce():
+def test_reduce_initial():
     data = [2, 2, 2]
     actual = f.reduce(lambda p, n: p + n, 2)(data)
     assert actual == 8

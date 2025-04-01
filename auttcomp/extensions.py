@@ -81,7 +81,7 @@ class Api(Composable[P, R]):
     @staticmethod
     @Composable
     def reduce(func: Callable[[T, T], R], initial: T = None) -> Callable[[Iterable[T]], R]:
-        '''curried version of functools's reduce (to use initial value, use reduce2)
+        '''curried version of functools's reduce
         reduce(function, iterable) -> value\n\nApply a function of two arguments cumulatively to the items of an iterable, from left to right.\n\nThis effectively reduces the iterable to a single value.    If initial is present,\nit is placed before the items of the iterable in the calculation, and serves as\na default when the iterable is empty.\n\nFor example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5])\ncalculates ((((1 + 2) + 3) + 4) + 5).
         '''
 
