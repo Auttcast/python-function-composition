@@ -34,6 +34,12 @@ def test_reduce():
     actual = f.reduce(lambda p, n: p + n)(data)
     assert actual == 6
 
+@tracelog("test_reduce_initial")
+def test_reduce():
+    data = [2, 2, 2]
+    actual = f.reduce(lambda p, n: p + n, 2)(data)
+    assert actual == 8
+
 @tracelog("test_flatmap")
 def test_flatmap():
     data = [[1], [1], [1]]
