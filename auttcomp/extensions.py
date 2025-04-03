@@ -1,8 +1,10 @@
 from collections import namedtuple
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from .utility import ObjUtil
 from .composable import Composable, P, R
-from typing import Callable, Any, Tuple, Iterable, TypeVar
+from typing import Callable, Any, Tuple, Iterable, TypeVar, Union
 from typing import Callable
+import asyncio
 import functools
 import itertools
 
@@ -219,7 +221,6 @@ class Api(Composable[P, R]):
     def group(func: Callable[[T], K] = id_param) -> Callable[[Iterable[T]], Iterable[KeyValuePair[K, Iterable[T]]]]:
         '''curried version of itertools.groupby
         sort by key is used before grouping to achieve singular grouping
-        f.groupby(lambda x.property)
         this implementation runs the iterable for the grouping, but yields the key/value pair as a new iterable
         '''
 
@@ -323,3 +324,14 @@ class Api(Composable[P, R]):
     
         return partial_single
     
+    @staticmethod
+    @Composable
+    def with_executor(executor:Union[ThreadPoolExecutor|ProcessPoolExecutor] = None) -> Callable[[Iterable[T]], R]:
+        
+        pass
+
+        # def partial_with_executor(data:Iterable[T]) -> R:
+        #     loop = asyncio.new_event_loop()
+        #     loop.run_in_executor(executor, callback, data)
+
+        # return partial_with_executor
