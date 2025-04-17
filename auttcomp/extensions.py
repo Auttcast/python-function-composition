@@ -1,21 +1,14 @@
-from collections import namedtuple
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from .utility import ObjUtil
 from .composable import Composable, P, R
 from typing import Callable, Any, Tuple, Iterable, TypeVar, Union
-from typing import Callable
-import asyncio
+from .common import id_param, KeyValuePair
 import functools
 import itertools
 
 T = TypeVar('T')
 T2 = TypeVar('T2')
 K = TypeVar('K')
-
-def id_param(x:Any) -> Any:
-    return x
-
-KeyValuePair = namedtuple("KeyValuePair", ["key", "value"])
 
 class Api(Composable[P, R]):
 
