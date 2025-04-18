@@ -97,3 +97,13 @@ def test_kargs():
     def func4to1(a, b, c, d): return (d-c)+(b-a)
     comp4 = comp | comp | f(func4to1)
     assert comp4(1, 2, d=4, c=3) == 2
+
+def test_prepend_comp():
+
+    main_comp = inc | inc | inc
+    pre_comp = inc | inc | main_comp
+
+    result = pre_comp(1)
+
+    assert result == 6
+    

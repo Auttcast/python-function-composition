@@ -178,3 +178,35 @@ async def test_map_ext():
     end_time = time.time()
     print(f"duration: {end_time - start_time}")
     print(result)
+
+
+@pytest.mark.asyncio
+async def test_comp_debug():
+
+    '''
+    prepending to comp?
+    '''
+
+    api = AsyncApi()
+
+    class MiniCompose:
+        def __call__(self, cb):
+            
+            #return AsyncContext.source_adapter | cb(AsyncApi())
+            return cb(AsyncApi())
+        
+    comp = MiniCompose()(lambda f: (
+        f.map(lambda x: x+1) 
+        | f.map(lambda x: x+1) 
+        | f.list
+    ))
+
+    async def get_gen(data):
+        for x in data:
+            yield AsyncUtil.value_co(x)
+
+    data = [1, 2, 3]
+
+    result = await comp(get_gen(data))
+
+    print(result)
