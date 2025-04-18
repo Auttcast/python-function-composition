@@ -47,6 +47,9 @@ class AsyncApi:
     reinforce a best practice: when async is used, everything should be async.
     -not going to worry about async-sync type of issues here, except lambdas will coerce to async
 
+    TODO:
+    cleanup tests based on source_adapter
+
     '''
 
     @staticmethod
@@ -153,7 +156,7 @@ async def test_async_coerce():
     assert r4 == 2
 
 @pytest.mark.asyncio
-async def test_async_comp_return_list():
+async def test_async_comp():
 
     async def inc_async(x):
         return x + 1
@@ -196,69 +199,29 @@ async def test_async_comp_return_gen():
 
 
 @pytest.mark.asyncio
-async def test_async_comp_id_invoke_return_list():
+async def test_source_adapter_returns_gen():
 
-    async def inc_async(x):
-        return x + 1
-    
-    data = [2, 1, 1, 1, 1, 2, 2]
+    data = [1, 2, 3]
 
-    comp_co = f.id(data) > AsyncContext()(lambda f: (
-        f.map(inc_async)
-        | f.map(lambda x: x+1)
-        | f.filter(lambda x: x != 3)
-        | f.map(inc_async)
-        | f.list
-    ))
+    async def get_gen(data):
+        for d in data:
+            yield d
 
-    result = await comp_co
+    def get_iter(data):
+        for d in data:
+            yield d
 
-    assert result == [5, 5, 5]
+    async def assert_gen_of_data(result_gen):
 
-@pytest.mark.asyncio
-async def test_async_comp_id_invoke_gen_return_list():
+        assert isinstance(result_gen, AsyncGenerator)
 
-    async def inc_async(x):
-        return x + 1
-    
-    data = [2, 1, 1, 1, 1, 2, 2]
-    async def get_data():
-        for x in data:
-            yield x
+        result_data = []
+        async for x in result_gen:
+            result_data.append(await x)
 
-    comp_co = f.id(get_data()) > AsyncContext()(lambda f: (
-        f.map(inc_async)
-        | f.map(lambda x: x+1)
-        | f.filter(lambda x: x != 3)
-        | f.map(inc_async)
-        | f.list
-    ))
+        assert result_data == data
 
-    result = await comp_co
-
-    assert result == [5, 5, 5]
-
-
-@pytest.mark.asyncio
-async def test_async_comp_id_invoke_iter_return_list():
-
-    async def inc_async(x):
-        return x + 1
-    
-    data = [2, 1, 1, 1, 1, 2, 2]
-    def get_data():
-        for x in data:
-            yield x
-
-    comp_co = f.id(get_data()) > AsyncContext()(lambda f: (
-        f.map(inc_async)
-        | f.map(lambda x: x+1)
-        | f.filter(lambda x: x != 3)
-        | f.map(inc_async)
-        | f.list
-    ))
-
-    result = await comp_co
-
-    assert result == [5, 5, 5]
+    await assert_gen_of_data(await AsyncContext.source_adapter(data))
+    await assert_gen_of_data(await AsyncContext.source_adapter(get_gen(data)))
+    await assert_gen_of_data(await AsyncContext.source_adapter(get_iter(data)))
 
