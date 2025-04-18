@@ -3,6 +3,7 @@ replaced reduce2 with reduce optional arg
 added ext functions single, first
 removed quicklog
 moved shape_eval to dedicated proj
+bug fix: fixed composable state issue which prevented result unpacking
 
 2.0.1
 Identity functions are no longer created using Composable directly, instead the .id extension method was added.

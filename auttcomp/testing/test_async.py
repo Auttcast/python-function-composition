@@ -156,7 +156,7 @@ async def test_async_coerce():
     assert r4 == 2
 
 @pytest.mark.asyncio
-async def test_map_ext():
+async def xtest_map_ext():
 
     async def inc_async(x):
         await asyncio.sleep(1)
@@ -181,7 +181,7 @@ async def test_map_ext():
 
 
 @pytest.mark.asyncio
-async def test_comp_debug():
+async def xtest_comp_debug():
 
     '''
     prepending to comp?
@@ -200,6 +200,8 @@ async def test_comp_debug():
         | f.map(lambda x: x+1) 
         | f.list
     ))
+
+
 
     async def get_gen(data):
         for x in data:

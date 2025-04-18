@@ -29,10 +29,14 @@ class AsyncComposable(Generic[P, R]):
         if not isinstance(other, AsyncComposable):
             other = AsyncComposable(other)
 
-        new_comp = AsyncComposable(self)
-        self.__chained = True
+        self_clone = AsyncComposable(self.__f)
+        self_clone.__g = self.__g
+        self_clone.__chained = self.__chained
+
+        new_comp = AsyncComposable(self_clone)
+        self_clone.__chained = True
         new_comp.__chained = False
-        other_comp = AsyncComposable(other.__f)
+        other_comp = AsyncComposable(other.__f) if isinstance(other, AsyncComposable) else AsyncComposable(other)
         other_comp.__chained = True
         new_comp.__g = other_comp
 

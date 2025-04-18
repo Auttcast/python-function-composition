@@ -98,12 +98,26 @@ def test_kargs():
     comp4 = comp | comp | f(func4to1)
     assert comp4(1, 2, d=4, c=3) == 2
 
+def test_bug_unpacking_reusable_comp():
+    myinc = f(increment)
+    foo = myinc | myinc
+    pre_comp = myinc
+
+    result = pre_comp(1)
+
+    assert result == 2
+
+
 def test_prepend_comp():
 
-    main_comp = inc | inc | inc
-    pre_comp = inc | inc | main_comp
+    '''
+    no unpacking when calling inc directly?
+    '''
+    myinc = f(increment)
+    #main_comp = inc | inc | inc
+    test = myinc | myinc
+    pre_comp = myinc
 
     result = pre_comp(1)
 
     assert result == 6
-    

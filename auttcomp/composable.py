@@ -26,16 +26,19 @@ class Composable(Generic[P, R]):
 
     #composition operator
     def __or__(self, other:Callable[[Any], OR]) -> Callable[P, OR]:
-        if not isinstance(other, Composable):
-            other = Composable(other)
+        
+        self_clone = Composable(self.__f)
+        self_clone.__g = self.__g
+        self_clone.__chained = self.__chained
 
-        new_comp = Composable(self)
-        self.__chained = True
+        new_comp = Composable(self_clone)
+        self_clone.__chained = True
         new_comp.__chained = False
-        other_comp = Composable(other.__f)
+        other_comp = Composable(other.__f) if isinstance(other, Composable) else Composable(other)
         other_comp.__chained = True
         new_comp.__g = other_comp
 
+        #print(new_comp)
         return new_comp
 
     def __get_bound_args(sig, args, kwargs):
@@ -66,7 +69,7 @@ class Composable(Generic[P, R]):
         is_single_tuple = type(result) == tuple and len(result) == 1
         is_terminating = not self.__chained and Composable.__is_terminating(self.__f, self.__g)
         should_unpack_result = is_terminating and is_single_tuple
-
+        
         if should_unpack_result:
             result = result[0]
 
