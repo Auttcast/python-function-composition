@@ -13,19 +13,17 @@ class AsyncUtil:
 
         running = []
         async for d in source_gen:
-            t = asyncio.create_task(d)
-            running.append(t)
+            running.append(asyncio.create_task(d))
 
-        for c in running:
-            if not c.cancelled():
-                yield await c
-
+        for r in running:
+            yield await r
+        
     @staticmethod            
     async def value_co(value):
         return value
     
     @staticmethod
-    def as_co(func):
+    def as_async(func):
         async def co_func(*args):
             return func(*args)
         return co_func
@@ -35,7 +33,7 @@ class AsyncUtil:
         if inspect.iscoroutinefunction(func):
             return func
         else:
-            return AsyncUtil.as_co(func)
+            return AsyncUtil.as_async(func)
 
 class AsyncApi:
 
@@ -53,8 +51,7 @@ class AsyncApi:
     todo:
     -bug fix missing f.list
     -if AsyncContext returns Iterable then implement eager exec
-    -async lambda workaround
-
+    
     '''
 
     @staticmethod
@@ -110,6 +107,11 @@ class AsyncContext:
             raise TypeError(f"data type {type(data)} not supported")
 
     def __call__(self, composition_factory:Callable[[AsyncApi], AsyncComposable]) -> AsyncComposable:
+        '''
+        todo
+        composition bug?
+        return async_gen eager exec
+        '''
         return AsyncContext.source_adapter | composition_factory(AsyncApi())
 
 @pytest.mark.asyncio
@@ -125,32 +127,6 @@ async def test_comp_w_id_invoke():
     r = await (f.id(1) > comp)
 
     assert r == 4
-
-@pytest.mark.asyncio
-async def test_map_ext():
-
-    async def inc_async(x):
-        await asyncio.sleep(x)
-        return x + 1
-    
-    async def test_filter_async(x):
-        return x != 3
-
-    data = [2, 1, 1, 1, 1, 2, 2, 2]
-
-    async_comp = AsyncContext()(lambda f: (
-        f.map(inc_async)
-        | f.map(inc_async)
-        # | f.filter(test_filter_async)
-        # | f.map(inc_async)
-        | f.list
-        | f.list
-    ))
-    start_time = time.time()
-    result = await async_comp(data)
-    end_time = time.time()
-    print(f"duration: {end_time - start_time}")
-    print(result)
 
 @pytest.mark.asyncio
 async def test_async_coerce():
@@ -178,3 +154,27 @@ async def test_async_coerce():
     assert r2 == 2
     assert r3 == 2
     assert r4 == 2
+
+@pytest.mark.asyncio
+async def test_map_ext():
+
+    async def inc_async(x):
+        await asyncio.sleep(1)
+        return x + 1
+    
+    data = [2, 1, 1, 1, 1, 2, 2, 2]
+
+    async_comp = AsyncContext()(lambda f: (
+        f.map(inc_async)
+        | f.map(inc_async)
+        | f.filter(lambda x: x != 3)
+        | f.map(inc_async)
+        | f.list
+        | f.list
+    ))
+
+    start_time = time.time()
+    result = await async_comp(data)
+    end_time = time.time()
+    print(f"duration: {end_time - start_time}")
+    print(result)
