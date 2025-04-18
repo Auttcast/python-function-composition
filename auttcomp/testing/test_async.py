@@ -156,7 +156,7 @@ async def test_async_coerce():
     assert r4 == 2
 
 @pytest.mark.asyncio
-async def xtest_map_ext():
+async def test_map_ext():
 
     async def inc_async(x):
         await asyncio.sleep(1)
@@ -170,7 +170,6 @@ async def xtest_map_ext():
         | f.filter(lambda x: x != 3)
         | f.map(inc_async)
         | f.list
-        | f.list
     ))
 
     start_time = time.time()
@@ -179,36 +178,3 @@ async def xtest_map_ext():
     print(f"duration: {end_time - start_time}")
     print(result)
 
-
-@pytest.mark.asyncio
-async def xtest_comp_debug():
-
-    '''
-    prepending to comp?
-    '''
-
-    api = AsyncApi()
-
-    class MiniCompose:
-        def __call__(self, cb):
-            
-            #return AsyncContext.source_adapter | cb(AsyncApi())
-            return cb(AsyncApi())
-        
-    comp = MiniCompose()(lambda f: (
-        f.map(lambda x: x+1) 
-        | f.map(lambda x: x+1) 
-        | f.list
-    ))
-
-
-
-    async def get_gen(data):
-        for x in data:
-            yield AsyncUtil.value_co(x)
-
-    data = [1, 2, 3]
-
-    result = await comp(get_gen(data))
-
-    print(result)
