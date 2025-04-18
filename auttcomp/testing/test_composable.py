@@ -100,7 +100,7 @@ def test_kargs():
 
 def test_bug_unpacking_reusable_comp():
     myinc = f(increment)
-    foo = myinc | myinc
+    _ = myinc | myinc
     pre_comp = myinc
 
     result = pre_comp(1)
@@ -109,15 +109,9 @@ def test_bug_unpacking_reusable_comp():
 
 
 def test_prepend_comp():
-
-    '''
-    no unpacking when calling inc directly?
-    '''
-    myinc = f(increment)
-    #main_comp = inc | inc | inc
-    test = myinc | myinc
-    pre_comp = myinc
+    main_comp = inc | inc
+    pre_comp = inc | main_comp
 
     result = pre_comp(1)
 
-    assert result == 6
+    assert result == 4

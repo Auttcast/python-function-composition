@@ -26,9 +26,7 @@ class AsyncComposable(Generic[P, R]):
 
     #composition operator
     def __or__(self, other:Callable[[Any], Awaitable[OR]]) -> Callable[P, Awaitable[OR]]:
-        if not isinstance(other, AsyncComposable):
-            other = AsyncComposable(other)
-
+        
         self_clone = AsyncComposable(self.__f)
         self_clone.__g = self.__g
         self_clone.__chained = self.__chained
@@ -36,7 +34,12 @@ class AsyncComposable(Generic[P, R]):
         new_comp = AsyncComposable(self_clone)
         self_clone.__chained = True
         new_comp.__chained = False
-        other_comp = AsyncComposable(other.__f) if isinstance(other, AsyncComposable) else AsyncComposable(other)
+        other_comp = None
+        if isinstance(other, AsyncComposable):
+            other_comp = AsyncComposable(other.__f)
+            other_comp.__g = other.__g
+        else:
+            other_comp = AsyncComposable(other)
         other_comp.__chained = True
         new_comp.__g = other_comp
 

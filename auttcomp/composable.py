@@ -34,11 +34,15 @@ class Composable(Generic[P, R]):
         new_comp = Composable(self_clone)
         self_clone.__chained = True
         new_comp.__chained = False
-        other_comp = Composable(other.__f) if isinstance(other, Composable) else Composable(other)
+        other_comp = None
+        if isinstance(other, Composable):
+            other_comp = Composable(other.__f)
+            other_comp.__g = other.__g
+        else:
+            other_comp = Composable(other)
         other_comp.__chained = True
         new_comp.__g = other_comp
 
-        #print(new_comp)
         return new_comp
 
     def __get_bound_args(sig, args, kwargs):
