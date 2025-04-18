@@ -132,3 +132,14 @@ async def test_prepend_comp():
     result = await pre_comp(1)
 
     assert result == 4
+
+@pytest.mark.asyncio
+async def test_coerce_sync():
+
+    @f
+    def sync_func(x):
+        return x + 1
+    
+    result = await sync_func(1)
+
+    assert result == 2
