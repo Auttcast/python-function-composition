@@ -1,5 +1,4 @@
 import inspect
-import time
 from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, Union
 from auttcomp.async_composable import AsyncComposable
 from ..extensions import Api as f
@@ -48,10 +47,6 @@ class AsyncApi:
     reinforce a best practice: when async is used, everything should be async.
     -not going to worry about async-sync type of issues here, except for lambdas
 
-    todo:
-    -bug fix missing f.list
-    -if AsyncContext returns Iterable then implement eager exec
-    
     '''
 
     @staticmethod
@@ -106,13 +101,15 @@ class AsyncContext:
         else:
             raise TypeError(f"data type {type(data)} not supported")
 
+    @staticmethod
+    @AsyncComposable
+    async def exit_boundary(data):
+        if isinstance(data, AsyncGenerator):
+            return AsyncUtil.eager_boundary(data)
+        return data
+
     def __call__(self, composition_factory:Callable[[AsyncApi], AsyncComposable]) -> AsyncComposable:
-        '''
-        todo
-        composition bug?
-        return async_gen eager exec
-        '''
-        return AsyncContext.source_adapter | composition_factory(AsyncApi())
+        return AsyncContext.source_adapter | composition_factory(AsyncApi()) | AsyncContext.exit_boundary
 
 @pytest.mark.asyncio
 async def test_comp_w_id_invoke():
@@ -156,25 +153,87 @@ async def test_async_coerce():
     assert r4 == 2
 
 @pytest.mark.asyncio
-async def test_map_ext():
+async def test_async_comp_return_list():
 
     async def inc_async(x):
-        await asyncio.sleep(1)
         return x + 1
     
-    data = [2, 1, 1, 1, 1, 2, 2, 2]
+    data = [2, 1, 1, 1, 1, 2, 2]
 
     async_comp = AsyncContext()(lambda f: (
         f.map(inc_async)
-        | f.map(inc_async)
+        | f.map(lambda x: x+1)
         | f.filter(lambda x: x != 3)
         | f.map(inc_async)
         | f.list
     ))
 
-    start_time = time.time()
     result = await async_comp(data)
-    end_time = time.time()
-    print(f"duration: {end_time - start_time}")
-    print(result)
 
+    assert result == [5, 5, 5]
+
+
+@pytest.mark.asyncio
+async def test_async_comp_return_gen():
+
+    async def inc_async(x):
+        return x + 1
+    
+    data = [2, 1, 1, 1, 1, 2, 2]
+
+    async_comp = AsyncContext()(lambda f: (
+        f.map(inc_async)
+        | f.map(lambda x: x+1)
+        | f.filter(lambda x: x != 3)
+        | f.map(inc_async)
+    ))
+
+    result = []
+    async for x in await async_comp(data):
+        result.append(x)
+
+    assert result == [5, 5, 5]
+
+
+@pytest.mark.asyncio
+async def test_async_comp_id_invoke_return_list():
+
+    async def inc_async(x):
+        return x + 1
+    
+    data = [2, 1, 1, 1, 1, 2, 2]
+
+    async_comp = f.id(data) > AsyncContext()(lambda f: (
+        f.map(inc_async)
+        | f.map(lambda x: x+1)
+        | f.filter(lambda x: x != 3)
+        | f.map(inc_async)
+        | f.list
+    ))
+
+    result = await async_comp
+
+    assert result == [5, 5, 5]
+
+@pytest.mark.asyncio
+async def test_async_comp_id_invoke_gen_return_list():
+
+    async def inc_async(x):
+        return x + 1
+    
+    data = [2, 1, 1, 1, 1, 2, 2]
+    async def get_data():
+        for x in data:
+            yield x
+
+    async_comp = f.id(get_data()) > AsyncContext()(lambda f: (
+        f.map(inc_async)
+        | f.map(lambda x: x+1)
+        | f.filter(lambda x: x != 3)
+        | f.map(inc_async)
+        | f.list
+    ))
+
+    result = await async_comp
+
+    assert result == [5, 5, 5]
