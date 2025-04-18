@@ -45,7 +45,7 @@ class AsyncApi:
     source and will continue this pattern until a function with eager_boundary is encountered
     
     reinforce a best practice: when async is used, everything should be async.
-    -not going to worry about async-sync type of issues here, except for lambdas
+    -not going to worry about async-sync type of issues here, except lambdas will coerce to async
 
     '''
 
@@ -203,7 +203,7 @@ async def test_async_comp_id_invoke_return_list():
     
     data = [2, 1, 1, 1, 1, 2, 2]
 
-    async_comp = f.id(data) > AsyncContext()(lambda f: (
+    comp_co = f.id(data) > AsyncContext()(lambda f: (
         f.map(inc_async)
         | f.map(lambda x: x+1)
         | f.filter(lambda x: x != 3)
@@ -211,7 +211,7 @@ async def test_async_comp_id_invoke_return_list():
         | f.list
     ))
 
-    result = await async_comp
+    result = await comp_co
 
     assert result == [5, 5, 5]
 
@@ -226,7 +226,7 @@ async def test_async_comp_id_invoke_gen_return_list():
         for x in data:
             yield x
 
-    async_comp = f.id(get_data()) > AsyncContext()(lambda f: (
+    comp_co = f.id(get_data()) > AsyncContext()(lambda f: (
         f.map(inc_async)
         | f.map(lambda x: x+1)
         | f.filter(lambda x: x != 3)
@@ -234,6 +234,7 @@ async def test_async_comp_id_invoke_gen_return_list():
         | f.list
     ))
 
-    result = await async_comp
+    result = await comp_co
 
     assert result == [5, 5, 5]
+
