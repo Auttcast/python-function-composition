@@ -1,9 +1,28 @@
+import time
 from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, Union
 from auttcomp.async_composable import AsyncComposable
 from ..extensions import Api as f
 import asyncio
 import pytest
 
+class AsyncUtil:
+
+    @staticmethod
+    async def eager_boundary[T](source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
+
+        running = []
+        async for d in source_gen:
+            t = asyncio.create_task(d)
+            running.append(t)
+
+        for c in running:
+            if not c.cancelled():
+                yield await c
+
+    @staticmethod            
+    async def value_task(value):
+        return value
+    
 class AsyncApi:
 
     '''
@@ -54,40 +73,26 @@ class AsyncApi:
                 
         return partial_map
 
-    @staticmethod
-    async def __co_filter_exec(filter_func_co, source_co):
-        value = await source_co
-        if await filter_func_co(value):
-            return value
-        asyncio.current_task().cancel()
-    
-
     def filter[T](self, func:Callable[[T], bool]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, T]]:
         '''
         filter implemented with eager execution
         if an element is filtered, the task is canceled
         '''
         @AsyncComposable
-        async def partial_map(source_gen: AsyncGenerator[Any, Awaitable[T]]) -> AsyncGenerator[Any, Awaitable[T]]:
-            async for co in source_gen:
-                yield AsyncApi.__co_filter_exec(func, co)
+        async def partial_filter(source_gen: AsyncGenerator[Any, Awaitable[T]]) -> AsyncGenerator[Any, Awaitable[T]]:
+            async for value in AsyncUtil.eager_boundary(source_gen):
+                if await func(value):
+                    yield AsyncUtil.value_task(value)
                 
-        return partial_map
+        return partial_filter
 
     @staticmethod
     @AsyncComposable
     async def list[T](source_gen:AsyncGenerator[Any, Awaitable[T]]) -> list[T]:
-        
-        running = []
-        async for d in source_gen:
-            t = asyncio.create_task(d)
-            running.append(t)
 
-        results = []
-        for c in running:
-            if not c.cancelled():
-                r = await c
-                results.append(r)
+        results = []        
+        async for d in AsyncUtil.eager_boundary(source_gen):
+            results.append(d)
 
         return results
 
@@ -130,21 +135,25 @@ async def test_comp_w_id_invoke():
 async def test_map_ext():
 
     async def inc_async(x):
+        print(f"inc_async {x}")
         await asyncio.sleep(x)
         return x + 1
     
     async def test_filter_async(x):
         return x != 3
 
-    data = [2, 1, 2]
+    data = [2, 1, 1, 1, 1, 2, 2, 2]
 
     async_comp = AsyncContext()(lambda f: (
         f.map(inc_async)
         | f.map(inc_async)
         | f.filter(test_filter_async)
+        | f.map(inc_async)
         | f.list
         | f.list
     ))
-        
+    start_time = time.time()
     result = await async_comp(data)
+    end_time = time.time()
+    print(f"duration: {end_time - start_time}")
     print(result)
