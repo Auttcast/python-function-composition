@@ -238,3 +238,27 @@ async def test_async_comp_id_invoke_gen_return_list():
 
     assert result == [5, 5, 5]
 
+
+@pytest.mark.asyncio
+async def test_async_comp_id_invoke_iter_return_list():
+
+    async def inc_async(x):
+        return x + 1
+    
+    data = [2, 1, 1, 1, 1, 2, 2]
+    def get_data():
+        for x in data:
+            yield x
+
+    comp_co = f.id(get_data()) > AsyncContext()(lambda f: (
+        f.map(inc_async)
+        | f.map(lambda x: x+1)
+        | f.filter(lambda x: x != 3)
+        | f.map(inc_async)
+        | f.list
+    ))
+
+    result = await comp_co
+
+    assert result == [5, 5, 5]
+
