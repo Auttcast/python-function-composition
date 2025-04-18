@@ -1,3 +1,4 @@
+import inspect
 import time
 from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, Union
 from auttcomp.async_composable import AsyncComposable
@@ -20,14 +21,31 @@ class AsyncUtil:
                 yield await c
 
     @staticmethod            
-    async def value_task(value):
+    async def value_co(value):
         return value
     
+    @staticmethod
+    def as_co(func):
+        async def co_func(*args):
+            return func(*args)
+        return co_func
+
+    @staticmethod
+    def coerce_async(func):
+        if inspect.iscoroutinefunction(func):
+            return func
+        else:
+            return AsyncUtil.as_co(func)
+
 class AsyncApi:
 
     '''
+    AsyncApi for IO, ParallelApi for CPU
+
     Pattern to optimize for parallelism and eager execution:
-    aggregators and terminators(like list), should exec all tasks from the async gen first,
+    -eager execution is possible thru a series of consecutive maps, 
+    in which case, every map func is treated as a continuation of the iterable/gen 
+    source and will continue this pattern until a function with eager_boundary is encountered
     
     reinforce a best practice: when async is used, everything should be async.
     -not going to worry about async-sync type of issues here, except for lambdas
@@ -37,27 +55,6 @@ class AsyncApi:
     -if AsyncContext returns Iterable then implement eager exec
     -async lambda workaround
 
-
-    review
-    the eager parallel model seems powerful, however it is limited in that one cannot easily determine if yields from async_gen have been cancelled.
-    this means that applying an intermediate adapter among the higher order functions is not practical, for implementing filter per task cancellation
-
-    speculation
-    lift co to (co, co_state)
-
-    tentative
-    AsyncContext will later be reworked for general purpose async
-    the current code will be labeled something like AsyncEagerContext
-
-    AsyncEagerContext outline
-    The operations for each higher order function and element of data are executed as quickly as possible.
-    This requires all higher order functions to yield a defered execution and a terminating function (like .list or some aggregate) 
-    to run the stack of compositions.
-
-    speculation
-    may be able to define an Eager boundary
-    IE several map compositions would exec eagerly, then a filter would collect
-
     '''
 
     @staticmethod
@@ -66,6 +63,8 @@ class AsyncApi:
 
     def map[T, R](self, func:Callable[[T], R]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, R]]:
         
+        func = AsyncUtil.coerce_async(func)
+
         @AsyncComposable
         async def partial_map(source_gen: AsyncGenerator[Any, Awaitable[T]]) -> AsyncGenerator[Any, Awaitable[R]]:
             async for co in source_gen:
@@ -74,26 +73,22 @@ class AsyncApi:
         return partial_map
 
     def filter[T](self, func:Callable[[T], bool]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, T]]:
-        '''
-        filter implemented with eager execution
-        if an element is filtered, the task is canceled
-        '''
+
+        func = AsyncUtil.coerce_async(func)
+
         @AsyncComposable
         async def partial_filter(source_gen: AsyncGenerator[Any, Awaitable[T]]) -> AsyncGenerator[Any, Awaitable[T]]:
             async for value in AsyncUtil.eager_boundary(source_gen):
                 if await func(value):
-                    yield AsyncUtil.value_task(value)
+                    yield AsyncUtil.value_co(value)
                 
         return partial_filter
 
-    @staticmethod
     @AsyncComposable
     async def list[T](source_gen:AsyncGenerator[Any, Awaitable[T]]) -> list[T]:
-
         results = []        
         async for d in AsyncUtil.eager_boundary(source_gen):
             results.append(d)
-
         return results
 
 class AsyncContext:
@@ -104,13 +99,13 @@ class AsyncContext:
         
         if isinstance(data, Iterable):
             for x in data:
-                yield asyncio.sleep(0, x)
+                yield AsyncUtil.value_co(x)
         elif isinstance(data, AsyncGenerator):
             async for x in data:
                 if isinstance(x, Coroutine):
                     yield x
                 else:
-                    yield asyncio.sleep(0, x)
+                    yield AsyncUtil.value_co(x)
         else:
             raise TypeError(f"data type {type(data)} not supported")
 
@@ -135,7 +130,6 @@ async def test_comp_w_id_invoke():
 async def test_map_ext():
 
     async def inc_async(x):
-        print(f"inc_async {x}")
         await asyncio.sleep(x)
         return x + 1
     
@@ -147,8 +141,8 @@ async def test_map_ext():
     async_comp = AsyncContext()(lambda f: (
         f.map(inc_async)
         | f.map(inc_async)
-        | f.filter(test_filter_async)
-        | f.map(inc_async)
+        # | f.filter(test_filter_async)
+        # | f.map(inc_async)
         | f.list
         | f.list
     ))
@@ -157,3 +151,30 @@ async def test_map_ext():
     end_time = time.time()
     print(f"duration: {end_time - start_time}")
     print(result)
+
+@pytest.mark.asyncio
+async def test_async_coerce():
+
+    def t_func(x):
+        return x+1
+    
+    async def t_async_func(x):
+        return x+1
+
+    async def t_async_func_await(x):
+        return await asyncio.sleep(0, x+1)
+
+    co_func1 = AsyncUtil.coerce_async(lambda x: x+1)
+    co_func2 = AsyncUtil.coerce_async(t_func)
+    co_func3 = AsyncUtil.coerce_async(t_async_func)
+    co_func4 = AsyncUtil.coerce_async(t_async_func_await)
+
+    r1 = await co_func1(1)
+    r2 = await co_func2(1)
+    r3 = await co_func3(1)
+    r4 = await co_func4(1)
+
+    assert r1 == 2
+    assert r2 == 2
+    assert r3 == 2
+    assert r4 == 2
