@@ -15,7 +15,7 @@ class AsyncApi:
 
     todo:
     -bug fix missing f.list
-    -consider custom AsyncApi.iter which would support the execution pattern, but adapt to iterable instead
+    -if AsyncContext returns Iterable then implement eager exec
     -async lambda workaround
 
 
@@ -23,12 +23,8 @@ class AsyncApi:
     the eager parallel model seems powerful, however it is limited in that one cannot easily determine if yields from async_gen have been cancelled.
     this means that applying an intermediate adapter among the higher order functions is not practical, for implementing filter per task cancellation
 
-    while I do like this execution model quite a lot, perhaps it would be best to form it into a more limited contextual fluent api
-    one that forces ordering, since .filter cannot run after .map here.
-
-    maybe it is possible with asyncio.current_task() within the exec functions ? but I don't like the idea of, for example,
-    having a huge list filtered to only a massive list, and the further continuations executing, still, a huge list of cancellations. 
-    contextual fluent sounds much more practical
+    speculation
+    lift co to (co, co_state)
 
     tentative
     AsyncContext will later be reworked for general purpose async
@@ -38,7 +34,11 @@ class AsyncApi:
     The operations for each higher order function and element of data are executed as quickly as possible.
     This requires all higher order functions to yield a defered execution and a terminating function (like .list or some aggregate) 
     to run the stack of compositions.
-    Consequently, filter can only be implemented as a task cancellation and further maps after filter are not practical
+
+    speculation
+    may be able to define an Eager boundary
+    IE several map compositions would exec eagerly, then a filter would collect
+
     '''
 
     @staticmethod
