@@ -1,9 +1,7 @@
 from typing import Any, Callable, Iterable
 from auttcomp.composable import Composable
 from concurrent.futures import ThreadPoolExecutor
-
-def id_param(x:Any) -> Any:
-    return x
+from .common import id_param
 
 class ParallelApi:
 
