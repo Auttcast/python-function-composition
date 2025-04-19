@@ -306,14 +306,3 @@ class Api(Composable[P, R]):
     
         return partial_single
     
-    @staticmethod
-    @Composable
-    def with_executor(executor:Union[ThreadPoolExecutor|ProcessPoolExecutor] = None) -> Callable[[Iterable[T]], R]:
-        
-        pass
-
-        # def partial_with_executor(data:Iterable[T]) -> R:
-        #     loop = asyncio.new_event_loop()
-        #     loop.run_in_executor(executor, callback, data)
-
-        # return partial_with_executor
