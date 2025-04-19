@@ -1,3 +1,4 @@
+import inspect
 from ..composable import Composable as f
 
 #to examine support for type hinting
@@ -106,7 +107,6 @@ def test_bug_unpacking_reusable_comp():
     result = pre_comp(1)
 
     assert result == 2
-
 
 def test_prepend_comp():
     main_comp = inc | inc

@@ -1,5 +1,6 @@
 from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, Union
 from auttcomp.async_composable import AsyncComposable
+from .composable import Composable
 from .common import id_param
 import inspect
 import asyncio
@@ -52,7 +53,9 @@ class AsyncApi:
     async def __co_map_exec(co_func, co):
         return await co_func(await co)
 
-    def map[T, R](self, func:Callable[[T], R]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, R]]:
+    @staticmethod
+    @Composable
+    def map[T, R](func:Callable[[T], R]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, R]]:
         
         func = AsyncUtil.coerce_async(func)
 
@@ -63,7 +66,9 @@ class AsyncApi:
                 
         return partial_map
 
-    def filter[T](self, func:Callable[[T], bool]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, T]]:
+    @staticmethod
+    @Composable
+    def filter[T](func:Callable[[T], bool]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, T]]:
 
         func = AsyncUtil.coerce_async(func)
 
@@ -75,6 +80,7 @@ class AsyncApi:
                 
         return partial_filter
 
+    @staticmethod
     @AsyncComposable
     async def list[T](source_gen:AsyncGenerator[Any, Awaitable[T]]) -> list[T]:
         results = []        

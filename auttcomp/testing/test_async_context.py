@@ -53,7 +53,7 @@ async def test_async_comp():
 
 @pytest.mark.asyncio
 async def test_async_comp_return_gen():
-
+    
     async def inc_async(x):
         return x + 1
     

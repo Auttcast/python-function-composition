@@ -143,3 +143,12 @@ async def test_coerce_sync():
     result = await sync_func(1)
 
     assert result == 2
+
+
+@pytest.mark.asyncio
+async def test_partial_1_param_func():
+    cat1 = f(lambda x: "0" + x)
+    co = cat1 & "1"
+    result = await co
+    assert isinstance(result, str)
+    assert result == "01"
