@@ -6,11 +6,6 @@ def test_id():
     actual = func()
     assert actual == 123
 
-def test_at():
-    data = {"foo": 123}
-    actual = f.at(lambda x: x['foo'])(data)
-    assert actual == 123
-
 def test_map():
     data = [1, 2, 3]
     gen = f.map(lambda x: x + 1)(data)

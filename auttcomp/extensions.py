@@ -25,17 +25,6 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def at(func: Callable[[T], R]) -> Callable[[T], R]:
-        '''property selector'''
-
-        @Composable
-        def partial_at(obj: T) -> R:
-            return func(obj)
-
-        return partial_at
-
-    @staticmethod
-    @Composable
     def map(func: Callable[[T], R]) -> Callable[[Iterable[T]], Iterable[R]]:
         '''curried version of python's map:
         map(func, *iterables) --> map object\n\nMake an iterator that computes the function using arguments from\neach of the iterables.    Stops when the shortest iterable is exhausted.
