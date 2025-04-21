@@ -1,3 +1,7 @@
+from concurrent.futures import ThreadPoolExecutor
+import sys
+import threading
+import time
 from typing import Any, AsyncGenerator
 from ..async_context import AsyncContext, AsyncUtil
 import asyncio
@@ -100,3 +104,31 @@ async def test_source_adapter_returns_gen():
     await assert_gen_of_data(await AsyncContext.source_adapter(get_gen(data)))
     await assert_gen_of_data(await AsyncContext.source_adapter(get_iter(data)))
 
+@pytest.mark.asyncio
+async def test_async_map_io_and_cpu_bound():
+
+    data = [1, 2, 3]
+
+    def cpu_bound(x):
+        # tid = threading.get_ident()
+        # print(f"sync {tid} foo: {x}")
+        # time.sleep(x/10)
+        return x+1
+
+    async def io_bound(x):
+        # tid = threading.get_ident()
+        # print(f"async {tid} foo: {x}")
+        # await asyncio.sleep(x/10)
+        return x+1
+
+    comp = AsyncContext()(lambda f: (
+        f.map(cpu_bound)
+        | f.map(io_bound)
+        | f.map(cpu_bound)
+        | f.map(io_bound)
+        | f.list
+    ))
+
+    result = await comp(data)
+
+    assert result == [5, 6, 7]

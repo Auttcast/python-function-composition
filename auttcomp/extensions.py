@@ -1,4 +1,3 @@
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from .utility import ObjUtil
 from .composable import Composable, P, R
 from typing import Callable, Any, Tuple, Iterable, TypeVar, Union
