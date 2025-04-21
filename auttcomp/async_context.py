@@ -1,4 +1,5 @@
 from concurrent.futures import Executor
+from enum import Enum
 from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, TypeVar, Union
 from auttcomp.async_composable import AsyncComposable
 from .composable import Composable, P, R
@@ -56,40 +57,56 @@ sometimes, long-running CPU can be considered IO. The design so far has been dis
 
 speculation
 -from coercion to Seperation of Concern
--bring AsyncApi method back to non-static, support composable instance-methods (accessing executor and loop for customization)
+-bring AsyncApi methods back to non-static, support composable instance-methods (accessing executor and loop for customization)
 -AsyncContext(executor?) - loop as asyncio.get_running_loop() for now
 -coerce_async: [speculative convention] async func is IO bound, sync func is CPU bound (made async with loop.run_in_executor)
 '''
 
-class AsyncUtil:
+class YieldOrdinalityType(Enum):
+    EAGER = 1
+    RETAIN = 2
 
-    @staticmethod
-    async def eager_boundary[T](source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
+class _ExtensionFactory:
+    
+    def __init__(self, 
+                 executor:Executor=None,
+                 yield_ordinality_type:YieldOrdinalityType=None
+                 ):
+        self.__loop : AbstractEventLoop = asyncio.get_event_loop()
+        self.__executor : Executor = executor
+        self.__yield_ordinality_type = yield_ordinality_type
 
+        self.eager_boundary = self.create_exit_boundary()
+
+    async def __start_task_execution(source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
         running = []
         async for d in source_gen:
             running.append(asyncio.create_task(d))
-
-        for r in running:
-            yield await r
+        return running
+    
+    def create_exit_boundary(self):
         
+        if self.__yield_ordinality_type == YieldOrdinalityType.RETAIN:
+
+            async def exit_boundary_retain_order[T](source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
+                for r in await _ExtensionFactory.__start_task_execution(source_gen):
+                    yield await r
+            return exit_boundary_retain_order
+        
+        elif self.__yield_ordinality_type == YieldOrdinalityType.EAGER:
+            
+            async def exit_boundary_eager_order[T](source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
+                for r in asyncio.as_completed(await _ExtensionFactory.__start_task_execution(source_gen)):
+                    yield await r
+            return exit_boundary_eager_order
+        
+        else:
+            raise TypeError(f"self.__yield_ordinality_type: {self.__yield_ordinality_type} not recognized")
+
     @staticmethod
     async def value_co(value):
         return value
     
-    @staticmethod
-    def as_async(func):
-        async def co_func(*args):
-            return func(*args)
-        return co_func
-
-
-class _ExtensionFactory:
-    
-    def __init__(self, executor:Executor=None):
-        self.__loop : AbstractEventLoop = asyncio.get_event_loop()
-        self.__executor : Executor = executor
-
     @staticmethod
     async def __co_map_exec(co_func, co):
         return await co_func(await co)
@@ -130,9 +147,9 @@ class _ExtensionFactory:
 
             @AsyncComposable
             async def partial_filter(source_gen: AsyncGenerator[Any, Awaitable[T]]) -> AsyncGenerator[Any, Awaitable[T]]:
-                async for value in AsyncUtil.eager_boundary(source_gen):
+                async for value in self.eager_boundary(source_gen):
                     if await func(value):
-                        yield AsyncUtil.value_co(value)
+                        yield _ExtensionFactory.value_co(value)
                     
             return partial_filter
         return filter
@@ -147,30 +164,39 @@ class _ExtensionFactory:
 
             @AsyncComposable
             async def partial_foreach(data: AsyncGenerator[Any, Awaitable[T]]) -> None:
-                async for x in AsyncUtil.eager_boundary(data):
+                async for x in self.eager_boundary(data):
                     await func(x)
 
             return partial_foreach
         return foreach
 
-class AsyncApi(Composable[P, R]):
+    def create_list(self):
+        
+        @AsyncComposable
+        async def _list[T](source_gen:AsyncGenerator[Any, Awaitable[T]]) -> list[T]:
+            results = []        
+            async for d in self.eager_boundary(source_gen):
+                results.append(d)
+            return results
+        
+        return _list
 
-    def __init__(self, executor:Executor=None):
-        factory = _ExtensionFactory(executor)
+class AsyncApi(AsyncComposable[P, R]):
 
+    def __init__(self, factory:_ExtensionFactory):
         self.map = factory.create_map()
         self.filter = factory.create_filter()
         self.foreach = factory.create_foreach()
+        self.list = factory.create_list()
         
-    @staticmethod
-    @AsyncComposable
-    async def list[T](source_gen:AsyncGenerator[Any, Awaitable[T]]) -> list[T]:
-        results = []        
-        async for d in AsyncUtil.eager_boundary(source_gen):
-            results.append(d)
-        return results
-
 class AsyncContext:
+
+    def __init__(self, 
+                 executor:Executor=None, 
+                 yield_ordinality_type:YieldOrdinalityType=YieldOrdinalityType.RETAIN
+                 ):
+        
+        self.factory = _ExtensionFactory(executor, yield_ordinality_type)
 
     @staticmethod
     @AsyncComposable
@@ -178,22 +204,24 @@ class AsyncContext:
         
         if isinstance(data, Iterable):
             for x in data:
-                yield AsyncUtil.value_co(x)
+                yield _ExtensionFactory.value_co(x)
         elif isinstance(data, AsyncGenerator):
             async for x in data:
                 if isinstance(x, Coroutine):
                     yield x
                 else:
-                    yield AsyncUtil.value_co(x)
+                    yield _ExtensionFactory.value_co(x)
         else:
             raise TypeError(f"data type {type(data)} not supported")
 
     @staticmethod
-    @AsyncComposable
-    async def exit_boundary(data):
-        if isinstance(data, AsyncGenerator):
-            return AsyncUtil.eager_boundary(data)
-        return data
+    def exit_boundary(factory):
+        @AsyncComposable
+        async def partial_exit_boundary(data):
+            if isinstance(data, AsyncGenerator):
+                return factory.eager_boundary(data)
+            return data
+        return partial_exit_boundary
 
     def __call__(self, composition_factory:Callable[[AsyncApi], AsyncComposable]) -> AsyncComposable:
-        return AsyncContext.source_adapter | composition_factory(AsyncApi()) | AsyncContext.exit_boundary
+        return AsyncContext.source_adapter | composition_factory(AsyncApi(self.factory)) | AsyncContext.exit_boundary(self.factory)

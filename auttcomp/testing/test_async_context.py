@@ -3,7 +3,7 @@ import sys
 import threading
 import time
 from typing import Any, AsyncGenerator
-from ..async_context import AsyncContext, AsyncUtil
+from ..async_context import AsyncContext
 import asyncio
 import pytest
 
