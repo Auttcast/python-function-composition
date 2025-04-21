@@ -82,16 +82,18 @@ async def test_async_map_io_and_cpu_bound():
 
     data = [1, 2, 3]
 
+    sync_lock = threading.Lock()
+    cpu_bound_tids = []
     def cpu_bound(x):
-        # tid = threading.get_ident()
-        # print(f"sync {tid} foo: {x}")
-        # time.sleep(x/10)
+        with sync_lock:
+            cpu_bound_tids.append(threading.get_ident())
         return x+1
 
+    async_lock = asyncio.Lock()
+    io_bound_tids = []
     async def io_bound(x):
-        # tid = threading.get_ident()
-        # print(f"async {tid} foo: {x}")
-        # await asyncio.sleep(x/10)
+        async with async_lock:
+            io_bound_tids.append(threading.get_ident())
         return x+1
 
     comp = AsyncContext()(lambda f: (
@@ -103,5 +105,8 @@ async def test_async_map_io_and_cpu_bound():
     ))
 
     result = await comp(data)
-
     assert result == [5, 6, 7]
+
+    assert len(set(io_bound_tids)) == 1
+    assert len(set(cpu_bound_tids)) > 1
+    
