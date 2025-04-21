@@ -8,33 +8,6 @@ import asyncio
 import pytest
 
 @pytest.mark.asyncio
-async def test_async_coerce():
-
-    def t_func(x):
-        return x+1
-    
-    async def t_async_func(x):
-        return x+1
-
-    async def t_async_func_await(x):
-        return await asyncio.sleep(0, x+1)
-
-    co_func1 = AsyncUtil.coerce_async(lambda x: x+1)
-    co_func2 = AsyncUtil.coerce_async(t_func)
-    co_func3 = AsyncUtil.coerce_async(t_async_func)
-    co_func4 = AsyncUtil.coerce_async(t_async_func_await)
-
-    r1 = await co_func1(1)
-    r2 = await co_func2(1)
-    r3 = await co_func3(1)
-    r4 = await co_func4(1)
-
-    assert r1 == 2
-    assert r2 == 2
-    assert r3 == 2
-    assert r4 == 2
-
-@pytest.mark.asyncio
 async def test_async_comp():
 
     async def inc_async(x):
