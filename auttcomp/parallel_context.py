@@ -16,6 +16,8 @@ class ParallelContext:
         self.cpu_bound_executor = cpu_bound_executor
         self.execution_type = execution_type
 
+    @staticmethod
+    @AsyncComposable
     async def exit_boundary[T](data) -> list[T]:
         if isinstance(data, AsyncGenerator):
             result = []
