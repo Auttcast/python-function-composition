@@ -136,3 +136,27 @@ async def test_async_foreach():
     except AssertionError:
         pass
 
+@pytest.mark.asyncio
+async def test_async_flatmap():
+
+    async def select_async(x):
+        return x
+    
+    def select_sync(x):
+        return x
+    
+    data = [[1], [2], [3]]
+
+    async_result = await (f.id(data) > AsyncContext()(lambda f: (
+        f.flatmap(select_async)
+        | f.list
+    )))
+
+    sync_result = await (f.id(data) > AsyncContext()(lambda f: (
+        f.flatmap(select_sync)
+        | f.list
+    )))
+
+    assert async_result == [1, 2, 3]
+    assert sync_result == [1, 2, 3]
+

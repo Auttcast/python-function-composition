@@ -1,7 +1,9 @@
 from concurrent.futures import Executor
 from enum import Enum
+import functools
 from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, TypeVar, Union
-from auttcomp.async_composable import AsyncComposable
+from .async_composable import AsyncComposable
+from .extensions import Api
 from .composable import Composable, P, R
 from .common import id_param
 from asyncio import AbstractEventLoop
@@ -16,14 +18,15 @@ K = TypeVar('K')
 AsyncApi for IO, ParallelApi for CPU
 
 Ubiquitous Language:
-Eager Execution - The dynamic execution of task continuations composed by multiple qualifying higher order functions (namely map and flatmap)
+Eager Execution - The dynamic execution of task continuations composed by multiple map compositions
     between an iterable source which yields its elements as un-awaited tasks/coroutines and an eager execution boundary which awaits the tasks.
 Parallel - Tasks "running" at the same time, on the same loop, not to be confused with parallel-threading.
-Exit Boundary - A source enumerator which evaluates the coroutines of the previous composition(s) per the chosen behavioral ExecutionType
+Exit Boundary - A source enumerator which evaluates the coroutines of the previous composition(s) per the chosen behavioral ExecutionType. In context,
+    map compositions create an execution chain, and any non-map is an exit boundary.
 
 Pattern to optimize for parallelism and eager execution:
 -the iterable/gen source yields non-awaited tasks or coroutines instead of values
--compositions (map,flatmap) operate on, and yield in the same non-blocking style,
+-map compositions operate on, and yield in the same non-blocking style,
     ultimately creating a set of task continuations which will be evaluated later at an execution boundary
 -eager execution is possible thru a series of consecutive maps,
 in which case, every map operation is treated as a task continuation from the iterable/gen source
@@ -31,7 +34,7 @@ and will continue this pattern until a higher order function with exit_boundary 
 -exit_boundary (operating with ExecutionType PARALLEL_EAGER or PARALLEL_RETAIN) begins execution of each task constructed 
 by the iterable/gen source (all tasks are started at the same time).
 So exit_boundary requires the previously composed higher order functions to operate with constraints:
-They must retain both the quantity and ordinality of the set. Hence, the pattern only applies to map and flatmap
+They must retain both the quantity and ordinality of the set.
 
 
 Motivation for Eager Execution
@@ -184,10 +187,30 @@ class _ExtensionFactory:
         
         return _list
 
+
+    def create_flatmap(self):
+            
+        @Composable
+        def flatmap(func: Callable[[T], R] = id_param) -> Callable[[AsyncGenerator[Any, Iterable[T]]], AsyncGenerator[Any, R]]:
+            
+            func = self.coerce_async(func)
+
+            @AsyncComposable
+            async def partial_flatmap(source_gen: AsyncGenerator[Any, Iterable[T]]) -> AsyncGenerator[Any, R]:
+                async for x1 in self.exit_boundary(source_gen):
+                    for x2 in await func(x1):
+                        yield _ExtensionFactory.value_co(x2)
+
+            return partial_flatmap
+        
+        return flatmap
+
 class AsyncApi(AsyncComposable[P, R]):
 
     def __init__(self, factory:_ExtensionFactory):
+        self.id = Api.id
         self.map = factory.create_map()
+        self.flatmap = factory.create_flatmap()
         self.filter = factory.create_filter()
         self.foreach = factory.create_foreach()
         self.list = factory.create_list()
