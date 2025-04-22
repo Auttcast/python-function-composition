@@ -2,12 +2,12 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-#[tool.setuptools.packages.find]
-#exclude = ["testing*"]
+[tool.setuptools.packages.find]
+exclude = ["testing*"]
 
 [project]
 name = "auttcomp"
-version = "2.0.1"
+version = "3.0.0"
 authors = [
   { name="Brandon McCartney", email="auttcast@gmail.com" },
 ]
@@ -23,6 +23,9 @@ classifiers = [
 
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE.txt"]
+dependencies = [
+    "shape_eval>=1.0.0"
+]
 
 [project.urls]
 Homepage = "https://github.com/Auttcast/python-function-composition"

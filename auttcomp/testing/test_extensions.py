@@ -295,3 +295,14 @@ def test_chunk():
     assert result[0] == [0, 1, 2]
     assert result[1] == [3, 4, 5]
     assert result[2] == [6, 7]
+
+def test_shape_eval():
+
+    data = [
+        {"id": 1, "name": "one", "data": 123},
+        {"id": 2, "name": "two", "data": "123"},
+        {"id": 3, "name": "three", "data": None}
+    ]
+    result = f.id(data) > f.shape
+    assert result == [{'data?': 'int|str|None', 'id': 'int', 'name': 'str'}]
+    

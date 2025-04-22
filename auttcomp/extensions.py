@@ -2,6 +2,7 @@ from .utility import ObjUtil
 from .composable import Composable, P, R
 from typing import Callable, Any, Tuple, Iterable, TypeVar
 from .common import id_param, KeyValuePair
+from shape_eval.service import shape as eval_shape
 import functools
 import itertools
 
@@ -21,6 +22,11 @@ class Api(Composable[P, R]):
             return data
 
         return partial_id
+
+    @staticmethod
+    @Composable
+    def shape(obj:Any) -> Any:
+        return eval_shape(obj)
 
     @staticmethod
     @Composable
