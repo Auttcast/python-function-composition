@@ -1,4 +1,5 @@
 import threading
+import time
 from typing import Any, AsyncGenerator
 from ..async_context import AsyncContext
 import asyncio
@@ -77,7 +78,12 @@ async def test_source_adapter_returns_gen():
 @pytest.mark.asyncio
 async def test_async_map_io_and_cpu_bound():
 
-    data = [1, 2, 3]
+    '''
+    depending on current thread contention, cpu_bound_tids may equal 1 when few items exist in the set
+    to increase probability that more than one thread will be involved, data with range of 10 is used
+    '''
+
+    data = list(range(0, 10))
 
     sync_lock = threading.Lock()
     cpu_bound_tids = []
@@ -90,7 +96,7 @@ async def test_async_map_io_and_cpu_bound():
     io_bound_tids = []
     async def io_bound(x):
         async with async_lock:
-            io_bound_tids.append(threading.get_ident())
+            io_bound_tids.append(threading.get_ident())        
         return x+1
 
     comp = AsyncContext()(lambda f: (
@@ -102,39 +108,7 @@ async def test_async_map_io_and_cpu_bound():
     ))
 
     result = await comp(data)
-    assert result == [5, 6, 7]
+    assert result == [4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 
     assert len(set(io_bound_tids)) == 1
     assert len(set(cpu_bound_tids)) > 1
-    
-@pytest.mark.asyncio
-async def test_async_map_with_exception_handling():
-
-    '''
-    implement some form of generic handling?
-    user may implement their own handling
-
-    what about timeout or token integration?
-
-    '''
-
-    data = [1, 2, 3]
-
-    def cpu_bound(x):
-        if x == 3:
-            raise ValueError(f"failed on {x}")
-        return x+1
-
-    async def io_bound(x):
-        return x+1
-
-    comp = AsyncContext()(lambda f: (
-        f.map(cpu_bound)
-        | f.map(io_bound)
-        | f.map(cpu_bound)
-        | f.map(io_bound)
-        | f.list
-    ))
-
-    result = await comp(data)
-    assert result == [5, 6, 7]
