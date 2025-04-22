@@ -1,6 +1,6 @@
 from .utility import ObjUtil
 from .composable import Composable, P, R
-from typing import Callable, Any, Tuple, Iterable, TypeVar, Union
+from typing import Callable, Any, Tuple, Iterable, TypeVar
 from .common import id_param, KeyValuePair
 import functools
 import itertools
@@ -309,6 +309,7 @@ class Api(Composable[P, R]):
     @Composable
     def chunk(count:int) -> Callable[[Iterable[T]], Iterable[Iterable[T]]]:
     
+        @Composable
         def partial_chunk(data:Iterable[T]) -> Iterable[list[T]]:
             
             it = iter(data)

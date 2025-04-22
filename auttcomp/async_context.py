@@ -1,6 +1,5 @@
 from concurrent.futures import Executor
 from enum import Enum
-import functools
 from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, TypeVar, Union
 from .async_composable import AsyncComposable
 from .extensions import Api
@@ -208,7 +207,6 @@ class _ExtensionFactory:
 class AsyncApi(AsyncComposable[P, R]):
 
     def __init__(self, factory:_ExtensionFactory):
-        self.id = Api.id
         self.map = factory.create_map()
         self.flatmap = factory.create_flatmap()
         self.filter = factory.create_filter()
