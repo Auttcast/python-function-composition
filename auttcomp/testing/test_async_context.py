@@ -113,29 +113,6 @@ async def test_async_filter():
 
 
 @pytest.mark.asyncio
-async def test_async_foreach():
-    
-    data = [1, 2, 3]
-
-    def throw_sync(x):
-        raise ValueError("expected")
-    
-    async def throw_async(x):
-        raise ValueError("expected")
-
-    try:
-        await (f.id(data) > AsyncContext()(lambda f: f.foreach(throw_async)))
-        raise AssertionError("expected to throw")
-    except ValueError:
-        pass
-
-    try:
-        await (f.id(data) > AsyncContext()(lambda f: f.foreach(throw_sync)))
-        raise AssertionError("expected to throw")
-    except ValueError:
-        pass
-
-@pytest.mark.asyncio
 async def test_async_flatmap():
 
     async def select_async(x):
