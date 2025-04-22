@@ -1,7 +1,6 @@
 import asyncio
 import pytest
 import threading
-import time
 from ..extensions import Api as f
 from typing import Any, AsyncGenerator
 from ..async_context import AsyncContext
@@ -119,21 +118,21 @@ async def test_async_foreach():
     data = [1, 2, 3]
 
     def throw_sync(x):
-        raise AssertionError("expected")
+        raise ValueError("expected")
     
     async def throw_async(x):
-        raise AssertionError("expected")
+        raise ValueError("expected")
 
-    try:    
+    try:
         await (f.id(data) > AsyncContext()(lambda f: f.foreach(throw_async)))
         raise AssertionError("expected to throw")
-    except AssertionError:
+    except ValueError:
         pass
 
     try:
         await (f.id(data) > AsyncContext()(lambda f: f.foreach(throw_sync)))
         raise AssertionError("expected to throw")
-    except AssertionError:
+    except ValueError:
         pass
 
 @pytest.mark.asyncio
