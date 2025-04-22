@@ -284,3 +284,14 @@ def test_huggingface_sample():
     )
 
     assert result == [('black-forest-labs', 1548084), ('deepseek-ai', 1448374), ('microsoft', 264891)]
+
+def test_chunk():
+
+    data = list(range(0, 8))
+
+    result = list(f.chunk(3)(data))
+
+    assert len(result) == 3
+    assert result[0] == [0, 1, 2]
+    assert result[1] == [3, 4, 5]
+    assert result[2] == [6, 7]

@@ -305,3 +305,25 @@ class Api(Composable[P, R]):
     
         return partial_single
     
+    @staticmethod
+    @Composable
+    def chunk(count:int) -> Callable[[Iterable[T]], Iterable[Iterable[T]]]:
+    
+        def partial_chunk(data:Iterable[T]) -> Iterable[list[T]]:
+            
+            it = iter(data)
+
+            batch = []
+            keep_batching = True
+            while keep_batching:
+                try:
+                    for x in range(0, count):
+                        batch.append(next(it))
+                except StopIteration:
+                    keep_batching = False
+                finally:
+                    yield batch
+                    batch = []
+
+        return partial_chunk
+    
