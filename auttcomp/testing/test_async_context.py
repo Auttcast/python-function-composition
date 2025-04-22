@@ -1,7 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor
-import sys
 import threading
-import time
 from typing import Any, AsyncGenerator
 from ..async_context import AsyncContext
 import asyncio
@@ -110,3 +107,34 @@ async def test_async_map_io_and_cpu_bound():
     assert len(set(io_bound_tids)) == 1
     assert len(set(cpu_bound_tids)) > 1
     
+@pytest.mark.asyncio
+async def test_async_map_with_exception_handling():
+
+    '''
+    implement some form of generic handling?
+    user may implement their own handling
+
+    what about timeout or token integration?
+
+    '''
+
+    data = [1, 2, 3]
+
+    def cpu_bound(x):
+        if x == 3:
+            raise ValueError(f"failed on {x}")
+        return x+1
+
+    async def io_bound(x):
+        return x+1
+
+    comp = AsyncContext()(lambda f: (
+        f.map(cpu_bound)
+        | f.map(io_bound)
+        | f.map(cpu_bound)
+        | f.map(io_bound)
+        | f.list
+    ))
+
+    result = await comp(data)
+    assert result == [5, 6, 7]

@@ -19,7 +19,7 @@ Ubiquitous Language:
 Eager Execution - The dynamic execution of task continuations composed by multiple qualifying higher order functions (namely map and flatmap)
     between an iterable source which yields its elements as un-awaited tasks/coroutines and an eager execution boundary which awaits the tasks.
 Parallel - Tasks "running" at the same time, on the same loop, not to be confused with parallel-threading.
-Eager Boundary - A source enumerator which evaluates the coroutines of the previous compositions.
+Exit Boundary - A source enumerator which evaluates the coroutines of the previous composition(s) per the chosen behavioral ExecutionType
 
 Pattern to optimize for parallelism and eager execution:
 -the iterable/gen source yields non-awaited tasks or coroutines instead of values
@@ -27,9 +27,9 @@ Pattern to optimize for parallelism and eager execution:
     ultimately creating a set of task continuations which will be evaluated later at an eager boundary
 -eager execution is possible thru a series of consecutive maps,
 in which case, every map operation is treated as a task continuation from the iterable/gen source
-and will continue this pattern until a higher order function with eager_boundary is encountered
--eager_boundary begins execution of each task constructed by the iterable/gen source (all tasks are started at the same time).
-So eager_boundary requires the composed higher order functions to operate with constraints:
+and will continue this pattern until a higher order function with exit_boundary is encountered
+-exit_boundary (operating with ExecutionType PARALLEL_*) begins execution of each task constructed by the iterable/gen source (all tasks are started at the same time).
+So exit_boundary requires the previously composed higher order functions to operate with constraints:
 They must retain both the quantity and ordinality of the set.
 
 
@@ -46,62 +46,73 @@ functions qualifying for eager continuation/execution:
     flatmap
 
 reinforce a best practice: when async is used, everything should be async.
--not going to worry about async-sync type of issues here, except lambdas will coerce to async
+-not going to worry about async-sync type of issues here, except lambdas and sync-def funcs will coerce to CPU-bound async functions
 
 Reminder:
--Bridging async and parallel CPU
 -handling cancellations and failed tasks
 
-Brainstorming
-sometimes, long-running CPU can be considered IO. The design so far has been distinctly seperate AsyncApi for IO and ParallelApi for CPU
-
-speculation
--from coercion to Seperation of Concern
--bring AsyncApi methods back to non-static, support composable instance-methods (accessing executor and loop for customization)
--AsyncContext(executor?) - loop as asyncio.get_running_loop() for now
--coerce_async: [speculative convention] async func is IO bound, sync func is CPU bound (made async with loop.run_in_executor)
 '''
 
-class YieldOrdinalityType(Enum):
-    EAGER = 1
-    RETAIN = 2
+class ExecutionType(Enum):
+    '''
+    PARALLEL_EAGER:
+    tasks execute at the same time and yield on completion
+    
+    PARALLEL_RETAIN = 2
+    tasks execute at the same time and yield with consistent ordinality
+
+    SYNC = 3
+    tasks execute and yield one at a time
+    '''
+    
+    PARALLEL_EAGER = 1
+    PARALLEL_RETAIN = 2
+    SYNC = 3
 
 class _ExtensionFactory:
     
     def __init__(self, 
                  executor:Executor=None,
-                 yield_ordinality_type:YieldOrdinalityType=None
+                 execution_type:ExecutionType=None
                  ):
         self.__loop : AbstractEventLoop = asyncio.get_event_loop()
         self.__executor : Executor = executor
-        self.__yield_ordinality_type = yield_ordinality_type
+        self.__execution_type = execution_type
 
-        self.eager_boundary = self.create_exit_boundary()
+        self.exit_boundary = self.create_exit_boundary_behavior()
 
-    async def __start_task_execution(source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
+    async def __start_parallel_execution(source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
         running = []
         async for d in source_gen:
             running.append(asyncio.create_task(d))
         return running
     
-    def create_exit_boundary(self):
+    def create_exit_boundary_behavior(self):
         
-        if self.__yield_ordinality_type == YieldOrdinalityType.RETAIN:
+        if self.__execution_type == ExecutionType.PARALLEL_RETAIN:
 
-            async def exit_boundary_retain_order[T](source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
-                for r in await _ExtensionFactory.__start_task_execution(source_gen):
+            async def exit_boundary_parallel_retain[T](source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
+                for r in await _ExtensionFactory.__start_parallel_execution(source_gen):
                     yield await r
-            return exit_boundary_retain_order
+            return exit_boundary_parallel_retain
         
-        elif self.__yield_ordinality_type == YieldOrdinalityType.EAGER:
+        elif self.__execution_type == ExecutionType.PARALLEL_EAGER:
             
-            async def exit_boundary_eager_order[T](source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
-                for r in asyncio.as_completed(await _ExtensionFactory.__start_task_execution(source_gen)):
+            async def exit_boundary_parallel_eager[T](source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
+                for r in asyncio.as_completed(await _ExtensionFactory.__start_parallel_execution(source_gen)):
                     yield await r
-            return exit_boundary_eager_order
+            return exit_boundary_parallel_eager
+        
+        if self.__execution_type == ExecutionType.SYNC:
+
+            async def exit_boundary_sync[T](source_gen:AsyncGenerator[Any, T]) -> AsyncGenerator[Any, T]:
+                async for d in source_gen:
+                    yield await d
+
+            return exit_boundary_sync
         
         else:
-            raise TypeError(f"self.__yield_ordinality_type: {self.__yield_ordinality_type} not recognized")
+            raise TypeError(f"self.__yield_ordinality_type: {self.__execution_type} not recognized")
 
     @staticmethod
     async def value_co(value):
@@ -120,13 +131,12 @@ class _ExtensionFactory:
         if inspect.iscoroutinefunction(func):
             return func
         else:
-            #return AsyncUtil.as_async(func)
             return self.create_cpu_bound_invocation(func)
         
     def create_map(self):
 
         @Composable
-        def map[T, R](func:Callable[[T], R]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, R]]:
+        def _map[T, R](func:Callable[[T], R]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, R]]:
             
             func = self.coerce_async(func)
 
@@ -136,46 +146,46 @@ class _ExtensionFactory:
                     yield _ExtensionFactory.__co_map_exec(func, co)
                     
             return partial_map
-        return map
+        return _map
 
     def create_filter(self):
 
         @Composable
-        def filter[T](func:Callable[[T], bool]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, T]]:
+        def _filter[T](func:Callable[[T], bool]) -> Callable[[AsyncGenerator[Any, T]], AsyncGenerator[Any, T]]:
 
             func = self.coerce_async(func)
 
             @AsyncComposable
             async def partial_filter(source_gen: AsyncGenerator[Any, Awaitable[T]]) -> AsyncGenerator[Any, Awaitable[T]]:
-                async for value in self.eager_boundary(source_gen):
+                async for value in self.exit_boundary(source_gen):
                     if await func(value):
                         yield _ExtensionFactory.value_co(value)
                     
             return partial_filter
-        return filter
+        return _filter
 
     def create_foreach(self):
             
         @Composable
-        def foreach(func: Callable[[T], R]) -> Callable[[AsyncGenerator[Any, Awaitable[T]]], None]:
+        def _foreach(func: Callable[[T], R]) -> Callable[[AsyncGenerator[Any, Awaitable[T]]], None]:
             '''exec the func for each element in the iterable'''
 
             func = self.coerce_async(func)
 
             @AsyncComposable
             async def partial_foreach(data: AsyncGenerator[Any, Awaitable[T]]) -> None:
-                async for x in self.eager_boundary(data):
+                async for x in self.exit_boundary(data):
                     await func(x)
 
             return partial_foreach
-        return foreach
+        return _foreach
 
     def create_list(self):
         
         @AsyncComposable
         async def _list[T](source_gen:AsyncGenerator[Any, Awaitable[T]]) -> list[T]:
             results = []        
-            async for d in self.eager_boundary(source_gen):
+            async for d in self.exit_boundary(source_gen):
                 results.append(d)
             return results
         
@@ -192,11 +202,11 @@ class AsyncApi(AsyncComposable[P, R]):
 class AsyncContext:
 
     def __init__(self, 
-                 executor:Executor=None, 
-                 yield_ordinality_type:YieldOrdinalityType=YieldOrdinalityType.RETAIN
+                 cpu_bound_executor:Executor=None, 
+                 execution_type:ExecutionType=ExecutionType.PARALLEL_RETAIN
                  ):
         
-        self.factory = _ExtensionFactory(executor, yield_ordinality_type)
+        self.factory = _ExtensionFactory(cpu_bound_executor, execution_type)
 
     @staticmethod
     @AsyncComposable
@@ -216,11 +226,13 @@ class AsyncContext:
 
     @staticmethod
     def exit_boundary(factory):
+
         @AsyncComposable
         async def partial_exit_boundary(data):
             if isinstance(data, AsyncGenerator):
-                return factory.eager_boundary(data)
+                return factory.exit_boundary(data)
             return data
+        
         return partial_exit_boundary
 
     def __call__(self, composition_factory:Callable[[AsyncApi], AsyncComposable]) -> AsyncComposable:
