@@ -1,34 +1,60 @@
-from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import time
 from ..parallel_context import ParallelContext
 from ..extensions import Api as f
-import time
 
-def xtest_exp_parallel():
+def test_parallel_list_result():
 
     '''
-    todo
-    swap sleep with parallel confirmation
-    expand api
+    ParallelContext is now just a wrapper for AsyncContext executed with asyncio.run
     '''
 
-    def blocking_callback(x):
-        time.sleep(1)
+    def sync_func(x):
+        #time.sleep(1)
         return x + 1
     
-    def blocking_is_even(x):
-        time.sleep(1)
-        return x % 2 == 0
+    async def async_func(x):
+        #await asyncio.sleep(1)
+        return x + 1
 
     data = [1, 2, 3]
-        
-    with ThreadPoolExecutor() as pool:
 
-        result = f.id(data) > ParallelContext(pool)(lambda f: (
-            f.map(blocking_callback) 
-            | f.map(blocking_callback)
-            | f.map(blocking_callback)
-            | f.filter(blocking_is_even)
-            | f.list
-        ))
+    comp = ParallelContext()(lambda f: (
+        f.map(sync_func)
+        | f.map(async_func)
+        | f.map(sync_func)
+        | f.map(async_func)
+        | f.list
+    ))
 
-        print(result)
+    result = comp(data)
+
+    assert result == [5, 6, 7]
+
+def test_parallel_iter_result():
+
+    '''
+    ParallelContext's exit_boundary is implemented to return a list when the result type is async_gen
+    because naturally, async_gen can not be practically evaluated outside of the async environment
+    '''
+
+    def sync_func(x):
+        #time.sleep(1)
+        return x + 1
+    
+    async def async_func(x):
+        #await asyncio.sleep(1)
+        return x + 1
+
+    data = [1, 2, 3]
+
+    comp = ParallelContext()(lambda f: (
+        f.map(sync_func)
+        | f.map(async_func)
+        | f.map(sync_func)
+        | f.map(async_func)
+    ))
+
+    result = comp(data)
+
+    assert result == [5, 6, 7]

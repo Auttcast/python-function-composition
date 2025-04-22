@@ -1,39 +1,42 @@
-from typing import Any, Callable, Iterable
+from concurrent.futures import Executor
+from typing import Any, AsyncGenerator, Callable
+from auttcomp.async_composable import AsyncComposable
 from auttcomp.composable import Composable
-from concurrent.futures import ThreadPoolExecutor
+from .async_context import AsyncApi, AsyncContext
 from .common import id_param
-
-class ParallelApi:
-
-    def __init__(self, pool:ThreadPoolExecutor):
-        self.pool:ThreadPoolExecutor = pool
-
-    def map[T, R](self, func: Callable[[T], R]) -> Callable[[Iterable[T]], Iterable[R]]:
-        
-        @Composable
-        def partial_map(data: Iterable[T]) -> Iterable[R]:
-            return self.pool.map(func, data)
-
-        return partial_map
-
-    def filter[T, R](self, func: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], Iterable[T]]:
-        
-        @Composable
-        def partial_filter(data: Iterable[T]) -> Iterable[T]:
-            lift = self.pool.map(lambda x: (x, func(x)), data)
-            lift_filter = filter(lambda x: x[1], lift)
-            lift_return = map(lambda x: x[0], lift_filter)
-            return lift_return
-
-        return partial_filter
-    
-    def list[T](self, data: Iterable[T]) -> list[T]:
-        return list(data)
-
+from .async_context import ExecutionType
+import asyncio
 
 class ParallelContext:
-    def __init__(self, pool:ThreadPoolExecutor):
-        self.pool:ThreadPoolExecutor = pool
+    
+    def __init__(self, 
+                 cpu_bound_executor:Executor=None, 
+                 execution_type:ExecutionType=ExecutionType.PARALLEL_RETAIN
+                 ):
+        self.cpu_bound_executor = cpu_bound_executor
+        self.execution_type = execution_type
 
-    def __call__(self, composition:Callable[[ParallelApi], Composable]) -> Composable:
-        return composition(ParallelApi(self.pool))
+    async def exit_boundary[T](data) -> list[T]:
+        if isinstance(data, AsyncGenerator):
+            result = []
+            async for x in data:
+                result.append(x)
+            return result
+        else:
+            return data
+
+    async def __internal_call_async(self, composition_factory, *args):
+        context = AsyncContext(self.cpu_bound_executor, self.execution_type)
+        comp = context(composition_factory) | ParallelContext.exit_boundary
+        return await comp(*args)
+
+    def __internal_call(self, composition_factory):
+
+        @Composable
+        def partial_internal_call(*args):
+            return asyncio.run(self.__internal_call_async(composition_factory, *args))
+        
+        return partial_internal_call
+
+    def __call__(self, composition_factory:Callable[[AsyncApi], AsyncComposable]) -> Composable:
+        return self.__internal_call(composition_factory)
