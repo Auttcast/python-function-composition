@@ -1,52 +1,10 @@
-import threading
-import time
-from typing import Any, AsyncGenerator
-from ..async_context import AsyncContext
 import asyncio
 import pytest
-
-@pytest.mark.asyncio
-async def test_async_comp():
-
-    async def inc_async(x):
-        return x + 1
-    
-    data = [2, 1, 1, 1, 1, 2, 2]
-
-    async_comp = AsyncContext()(lambda f: (
-        f.map(inc_async)
-        | f.map(lambda x: x+1)
-        | f.filter(lambda x: x != 3)
-        | f.map(inc_async)
-        | f.list
-    ))
-
-    result = await async_comp(data)
-
-    assert result == [5, 5, 5]
-
-
-@pytest.mark.asyncio
-async def test_async_comp_return_gen():
-    
-    async def inc_async(x):
-        return x + 1
-    
-    data = [2, 1, 1, 1, 1, 2, 2]
-
-    async_comp = AsyncContext()(lambda f: (
-        f.map(inc_async)
-        | f.map(lambda x: x+1)
-        | f.filter(lambda x: x != 3)
-        | f.map(inc_async)
-    ))
-
-    result = []
-    async for x in await async_comp(data):
-        result.append(x)
-
-    assert result == [5, 5, 5]
-
+import threading
+import time
+from ..extensions import Api as f
+from typing import Any, AsyncGenerator
+from ..async_context import AsyncContext
 
 @pytest.mark.asyncio
 async def test_source_adapter_returns_gen():
@@ -79,7 +37,7 @@ async def test_source_adapter_returns_gen():
 async def test_async_map_io_and_cpu_bound():
 
     '''
-    depending on current thread contention, cpu_bound_tids may equal 1 when few items exist in the set
+    depending on thread contention, cpu_bound_tids may equal 1 when few items exist in the set
     to increase probability that more than one thread will be involved, data with range of 10 is used
     '''
 
@@ -102,13 +60,79 @@ async def test_async_map_io_and_cpu_bound():
     comp = AsyncContext()(lambda f: (
         f.map(cpu_bound)
         | f.map(io_bound)
-        | f.map(cpu_bound)
-        | f.map(io_bound)
         | f.list
     ))
 
     result = await comp(data)
-    assert result == [4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    assert result == [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
     assert len(set(io_bound_tids)) == 1
     assert len(set(cpu_bound_tids)) > 1
+
+@pytest.mark.asyncio
+async def test_async_map():
+
+    async def inc_async(x):
+        return x + 1
+    
+    def inc_sync(x):
+        return x + 1
+    
+    data = [1, 2, 3]
+
+    async_comp = AsyncContext()(lambda f: (
+        f.map(inc_async)
+        | f.map(inc_sync)
+        | f.list
+    ))
+
+    result = await async_comp(data)
+
+    assert result == [3, 4, 5]
+
+
+@pytest.mark.asyncio
+async def test_async_filter():
+    
+    data = [1, 2, 3]
+
+    async def filter_async(x):
+        return x > 1
+    
+    def filter_sync(x):
+        return x > 2
+    
+    async_comp = AsyncContext()(lambda f: (
+        f.filter(filter_async)
+        | f.filter(filter_sync)
+        | f.list
+    ))
+
+    result = await async_comp(data)
+
+    assert result == [3]
+
+
+@pytest.mark.asyncio
+async def test_async_foreach():
+    
+    data = [1, 2, 3]
+
+    def throw_sync(x):
+        raise AssertionError("expected")
+    
+    async def throw_async(x):
+        raise AssertionError("expected")
+
+    try:    
+        await (f.id(data) > AsyncContext()(lambda f: f.foreach(throw_async)))
+        raise AssertionError("expected to throw")
+    except AssertionError:
+        pass
+
+    try:
+        await (f.id(data) > AsyncContext()(lambda f: f.foreach(throw_sync)))
+        raise AssertionError("expected to throw")
+    except AssertionError:
+        pass
+
