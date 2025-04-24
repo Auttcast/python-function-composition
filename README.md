@@ -277,6 +277,7 @@ async def main():
     | f.map(with_branches_async)
     | f.list
   ))
+
   iter_result = f.id(async_result) > (
     f.group(lambda x: x[1]) # group by language
     | f.sort_by_desc(lambda x: len(x[1]))
@@ -291,6 +292,65 @@ asyncio.run(main())
 
 A lot has changed with the sample. The map func within AsyncContext (with_branches_async), get_data, and get_branches were replaced with async implementations. But the effect is that rather than having a thread blocking and waiting on the http response, the code is now able to await the response, yielding execution time to other tasks, without requiring many additional threads, yet providing the illusion that the execution is still parallel.
 
+If we look more closely at get_data_async, we may find that json.loads is actually better suited for a CPU-bound function. So for our final optimization, we will refactor this operation into a CPU-bound map. Also, since the order of AsyncContext's result does not matter (the results are sorted in a latter function), the execution_type here is set to PARALLEL_EAGER. This allows the compositions to execute as tasks are completed rather than by the ordinality of the original set.
+
+```python
+import requests
+import json
+import asyncio
+import aiohttp
+from types import SimpleNamespace
+from typing import Iterable
+from pprint import pprint
+from auttcomp.extensions import Api as f
+from auttcomp.async_context import AsyncContext, ExecutionType
+
+async def get_data_async(url):
+  async with aiohttp.ClientSession() as session:
+    async with session.get(url) as response:
+      return await response.text()
+
+async def get_branches_async(base_url):
+  branch_url = f"{base_url}/branches"
+  return await get_data_async(branch_url)
+
+async def with_branches_async(x):
+  branch_detail = await get_branches_async(x.url)
+  return (x.name, x.language, branch_detail)
+
+def to_json(text):
+  return json.loads(text, object_hook=lambda d: SimpleNamespace(**d))
+
+def get_branches_len(text):
+  response_obj = to_json(text)
+  return len(response_obj)
+
+async def get_repos_async():
+  text = await get_data_async("https://api.github.com/users/auttcast/repos")
+  return to_json(text)
+
+async def main():
+  repo_details = await get_repos_async() # renamed from "data" for clarity
+
+  async_result = await (f.id(repo_details) > AsyncContext(execution_type=ExecutionType.PARALLEL_EAGER)(lambda f:
+    f.filter(lambda x: x.language is not None) #CPU-bound
+    | f.map(with_branches_async) # IO-bound
+    | f.map(lambda x: (x[0], x[1], get_branches_len(x[2]))) #CPU-bound
+    | f.list
+  ))
+
+  iter_result = f.id(async_result) > (
+    f.group(lambda x: x[1]) # group by language
+    | f.sort_by_desc(lambda x: len(x[1]))
+    | f.take(1)
+    | list 
+  )
+  
+  pprint(iter_result)
+
+asyncio.run(main())
+
+```
 ## Testing
 pytest 7.4.3
 
