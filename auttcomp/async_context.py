@@ -2,7 +2,6 @@ from concurrent.futures import Executor
 from enum import Enum
 from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, TypeVar, Union
 from .async_composable import AsyncComposable
-from .extensions import Api
 from .composable import Composable, P, R
 from .common import id_param
 from asyncio import AbstractEventLoop
@@ -57,7 +56,7 @@ class ExecutionType(Enum):
     tasks execute at the same time and yield with consistent ordinality
 
     SYNC
-    tasks execute and yield one at a time
+    tasks execute and yield one at a time (may be ideal if IO is rate-limited)
     '''
     
     PARALLEL_EAGER = 1

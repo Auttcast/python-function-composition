@@ -1,4 +1,3 @@
-import inspect
 from ..composable import Composable as f
 
 #to examine support for type hinting

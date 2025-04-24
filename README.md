@@ -318,22 +318,22 @@ async def with_branches_async(x):
   branch_detail = await get_branches_async(x.url)
   return (x.name, x.language, branch_detail)
 
-def to_json(text):
+def from_json_to_obj(text):
   return json.loads(text, object_hook=lambda d: SimpleNamespace(**d))
 
 def get_branches_len(text):
-  response_obj = to_json(text)
+  response_obj = from_json_to_obj(text)
   return len(response_obj)
 
 async def get_repos_async():
   text = await get_data_async("https://api.github.com/users/auttcast/repos")
-  return to_json(text)
+  return from_json_to_obj(text)
 
 async def main():
   repo_details = await get_repos_async() # renamed from "data" for clarity
 
   async_result = await (f.id(repo_details) > AsyncContext(execution_type=ExecutionType.PARALLEL_EAGER)(lambda f:
-    f.filter(lambda x: x.language is not None) #CPU-bound
+    f.filter(lambda x: x.language is not None) #CPU-bound (see caveat below!)
     | f.map(with_branches_async) # IO-bound
     | f.map(lambda x: (x[0], x[1], get_branches_len(x[2]))) #CPU-bound
     | f.list
@@ -345,12 +345,15 @@ async def main():
     | f.take(1)
     | list 
   )
-  
+
   pprint(iter_result)
 
 asyncio.run(main())
 
 ```
+
+Caveat: The filter operation within the sample's AsyncContext is a very inexpensive on CPU, however it is still a CPU-bound operation, which by convention, will dispatch to the thread pool. It should be noted that it is computationally more expensive to dispatch this operation to a thread. However, I am not concerned with that degree of performance here, as I have observed on my system, only adds about 0.0003 seconds to an invocation.
+
 ## Testing
 pytest 7.4.3
 
