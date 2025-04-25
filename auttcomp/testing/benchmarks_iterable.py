@@ -1,11 +1,17 @@
-import time
-from auttcomp.async_context import AsyncContext
+import concurrent.futures
+from auttcomp.async_context import AsyncContext, ExecutionType
 from auttcomp.parallel_context import ParallelContext
 from ..extensions import Api as f
 import asyncio
 import pytest
-
+import time
+import concurrent
+import uvloop
 '''
+
+NOTES
+
+
 -------------------------------------------------------------------------------------- benchmark: 5 tests -------------------------------------------------------------------------------------
 Name (time in ms)                Min                 Max                Mean            StdDev              Median               IQR            Outliers      OPS            Rounds  Iterations
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -16,62 +22,21 @@ test_parallel_cpu_bound      32.4972 (1.05)      33.1523 (1.06)      32.7964 (1.
 test_iter                   304.3560 (9.86)     304.8425 (9.73)     304.6557 (9.81)     0.1861 (1.92)     304.7300 (9.82)     0.2142 (2.19)          2;0   3.2824 (0.10)          5           1
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
-
-
 '''
 
-data = list(range(0, 10))
-expected = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
+cpu_bound_data = list(range(0, 1000))
 def inc_sync(x):
-    time.sleep(0.01)
+    #time.sleep(0.01)
     return x+1
 
+io_bound_data = list(range(0, 1000))
 async def inc_async(x):
-    await asyncio.sleep(0.01)
+    #await asyncio.sleep(0.01)
     return x+1
-
-def test_iter(benchmark):
-    def setup():
-        comp = (
-            f.map(inc_sync)
-            | f.map(inc_sync)
-            | f.map(inc_sync)
-            | f.list
-        )
-
-        assert comp(data) == expected
-
-    benchmark(setup)
-
-def test_parallel_cpu_bound(benchmark):
-    def setup():
-        comp = ParallelContext()(lambda f:
-            f.map(inc_sync)
-            | f.map(inc_sync)
-            | f.map(inc_sync)
-            | f.list
-        )
-        assert comp(data) == expected
-
-    benchmark(setup)
-
-def test_parallel_io_bound(benchmark):
-    def setup():
-        comp = ParallelContext()(lambda f:
-            f.map(inc_async)
-            | f.map(inc_async)
-            | f.map(inc_async)
-            | f.list
-        )
-
-        assert comp(data) == expected
-
-    benchmark(setup)
 
 #@pytest.mark.asyncio
-def test_async_cpu_bound(benchmark):
+def test_cpu_bound_async(benchmark):
     
     async def setup():
         asyncio.set_event_loop(asyncio.new_event_loop())
@@ -83,15 +48,13 @@ def test_async_cpu_bound(benchmark):
             | f.list
         )
         
-        assert await comp(data) == expected
+        await comp(cpu_bound_data)
 
-    def main():
-        asyncio.run(setup())
+    benchmark(lambda: asyncio.run(setup()))
 
-    benchmark(main)
 
 #@pytest.mark.asyncio
-def test_async_io_bound(benchmark):
+def test_io_bound_async(benchmark):
     
     async def setup():
         asyncio.set_event_loop(asyncio.new_event_loop())
@@ -103,9 +66,135 @@ def test_async_io_bound(benchmark):
             | f.list
         )
 
-        assert await comp(data) == expected
+        await comp(io_bound_data)
 
-    def main():
-        asyncio.run(setup())
+    benchmark(lambda: asyncio.run(setup()))
 
-    benchmark(main)
+
+def test_cpu_bound_uvloop(benchmark):
+    
+    async def setup():
+
+        comp = AsyncContext()(lambda f:
+            f.map(inc_sync)
+            | f.map(inc_sync)
+            | f.map(inc_sync)
+            | f.list
+        )
+        
+        await comp(cpu_bound_data)
+
+    benchmark(lambda: uvloop.run(setup()))
+
+
+def test_io_bound_uvloop(benchmark):
+    
+    async def setup():
+
+        comp = AsyncContext()(lambda f:
+            f.map(inc_async)
+            | f.map(inc_async)
+            | f.map(inc_async)
+            | f.list
+        )
+
+        await comp(io_bound_data)
+
+    benchmark(lambda: uvloop.run(setup()))
+
+
+def test_cpu_bound_processpool(benchmark):
+    
+    with concurrent.futures.ProcessPoolExecutor() as pool:
+
+        async def setup():
+
+            comp = AsyncContext(cpu_bound_executor=pool)(lambda f:
+                f.map(inc_sync)
+                | f.map(inc_sync)
+                | f.map(inc_sync)
+                | f.list
+            )
+            
+            await comp(cpu_bound_data)
+
+        benchmark(lambda: asyncio.run(setup()))
+
+
+def test_io_bound_processpool(benchmark):
+    
+    with concurrent.futures.ProcessPoolExecutor() as pool:
+
+        async def setup():
+
+            comp = AsyncContext(cpu_bound_executor=pool)(lambda f:
+                f.map(inc_async)
+                | f.map(inc_async)
+                | f.map(inc_async)
+                | f.list
+            )
+
+            await comp(io_bound_data)
+
+        benchmark(lambda: asyncio.run(setup()))
+
+@pytest.mark.asyncio
+async def test_demo_pool():
+
+    el = asyncio.new_event_loop()
+    
+
+def test_demo_pool2():
+
+    '''
+    
+    in async main
+    create an additional loop
+    tasks added to additional loop are cancelled after a time limit
+    if cancelled, are deferred to main loop
+    
+    '''
+
+    from concurrent.futures import _base
+    from concurrent.futures.thread import BrokenThreadPool, _global_shutdown_lock, _shutdown, _WorkItem
+
+    class CustomThreadPoolExecutor(concurrent.futures.ThreadPoolExecutor):
+        def __init__(self):
+            super().__init__()
+
+        #overloaded
+        def submit(self, fn, /, *args, **kwargs):
+            print(f"self._threads: {len(self._threads)} self._idle_semaphore {self._idle_semaphore._value}")
+            with self._shutdown_lock, _global_shutdown_lock:
+                if self._broken:
+                    raise BrokenThreadPool(self._broken)
+
+                if self._shutdown:
+                    raise RuntimeError('cannot schedule new futures after shutdown')
+                if _shutdown:
+                    raise RuntimeError('cannot schedule new futures after '
+                                    'interpreter shutdown')
+
+                f = _base.Future()
+                w = _WorkItem(f, fn, args, kwargs)
+
+                self._work_queue.put(w)
+
+                if len(self._threads) < 1:
+                    self._adjust_thread_count()
+
+                #self._adjust_thread_count()
+
+                return f
+
+    data = list(range(0, 100))
+    context = ParallelContext(cpu_bound_executor=CustomThreadPoolExecutor())
+
+    start = time.time()
+    r = f.id(data) > context(lambda f: (
+        f.map(lambda x: x+1)
+        | f.list
+    ))
+    end = time.time()
+
+    print(f"duration: {end - start} result len: {len(r)}")

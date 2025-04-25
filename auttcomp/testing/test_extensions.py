@@ -1,3 +1,5 @@
+import time
+from auttcomp.parallel_context import ParallelContext
 from ..extensions import KeyValuePair, Api as f
 from .base_test import get_hugging_face_sample
 

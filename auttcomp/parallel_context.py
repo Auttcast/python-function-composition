@@ -6,6 +6,8 @@ from .async_context import AsyncApi, AsyncContext
 from .common import id_param
 from .async_context import ExecutionType
 import asyncio
+import sys
+import uvloop
 
 class ParallelContext:
     
@@ -36,7 +38,10 @@ class ParallelContext:
 
         @Composable
         def partial_internal_call(*args):
-            return asyncio.run(self.__internal_call_async(composition_factory, *args))
+            if sys.version_info >= (3, 11):
+                return uvloop.run(self.__internal_call_async(composition_factory, *args))
+            else:
+                return asyncio.run(self.__internal_call_async(composition_factory, *args))
         
         return partial_internal_call
 
