@@ -312,18 +312,18 @@ async def get_data_async(url):
     async with session.get(url) as response:
       return await response.text()
 
-async def get_branch_count_async(base_url):
+async def get_branch_async(base_url):
   branch_url = f"{base_url}/branches"
   return await get_data_async(branch_url)
 
 async def with_branches_async(x):
-  branch_detail = await get_branch_count_async(x.url)
+  branch_detail = await get_branch_async(x.url)
   return (x.name, x.language, branch_detail)
 
 def from_json_to_obj(text):
   return json.loads(text, object_hook=lambda d: SimpleNamespace(**d))
 
-def get_branch_count_len(text):
+def get_branch_count(text):
   response_obj = from_json_to_obj(text)
   return len(response_obj)
 
