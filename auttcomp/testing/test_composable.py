@@ -11,6 +11,7 @@ split_num = f(lambda x: (x/2, x/2))
 with_str = f(lambda x: (x, str(x)))
 str_len = f(lambda x,y: len(y))
 pass_thru = f(lambda x: x)
+get_1 = f(lambda: 1)
 
 def pass_many_params(a, b, c, d):
     return (a, b, c, d)
@@ -63,15 +64,6 @@ def test_iterables():
     
     assert func(10) == 5
 
-def void_func():
-    pass
-
-def test_void():
-    vf = f(void_func)
-    func = vf | vf | vf
-    func()
-    assert True, "does not throw"
-
 def test_dynamic_wrapping():
 
     #test_iterables without f-wrap
@@ -114,3 +106,12 @@ def test_prepend_comp():
     result = pre_comp(1)
 
     assert result == 4
+
+def test_comp_intermediate_null():
+
+    def returns_none(x):
+        return None
+    
+    comp = get_1 | returns_none | f(lambda x: str(x))
+
+    assert comp() == 'None'

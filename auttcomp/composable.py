@@ -1,7 +1,5 @@
-from typing import Any, Callable, Concatenate, Optional, ParamSpec, TypeVar, Generic
+from typing import Any, Callable, Concatenate, ParamSpec, TypeVar, Generic
 import inspect
-
-_INV_R_TYPE_PACK = {type((1,)), type(None)}
 
 #composable
 P = ParamSpec('P')
@@ -19,112 +17,55 @@ IR = TypeVar('IR')
 
 class Composable(Generic[P, R]):
 
-    def __init__(self, func:Callable[P, R]):
-        self.__f:Callable[P, R] = func
-        self.__g = None
-        self.__chained = False
+    def __init__(self, func:Callable[P, R] = None):
+        self.__funcs = (func,)
 
     #composition operator
     def __or__(self, other:Callable[[Any], OR]) -> Callable[P, OR]:
         
-        self_clone = Composable(self.__f)
-        self_clone.__g = self.__g
-        self_clone.__chained = self.__chained
+        new_comp = Composable()
 
-        new_comp = Composable(self_clone)
-        self_clone.__chained = True
-        new_comp.__chained = False
-        other_comp = None
         if isinstance(other, Composable):
-            other_comp = Composable(other.__f)
-            other_comp.__g = other.__g
+            new_comp.__funcs = (*self.__funcs, *other.__funcs)
         else:
-            other_comp = Composable(other)
-        other_comp.__chained = True
-        new_comp.__g = other_comp
+            new_comp.__funcs = (*self.__funcs, other)
 
         return new_comp
 
-    def __get_bound_args(sig, args, kwargs):
-        bound = sig.bind_partial(*args, **kwargs)
-        bound.apply_defaults()
-        return bound.args
-
     @staticmethod
-    def __get_sig_recurse(func):
-        if isinstance(func, Composable):
-            return Composable.__get_sig_recurse(func.__f)
-        else:
-            if inspect.isclass(func):
-                return inspect.signature(func.__call__)
-            return inspect.signature(func)
+    def __get_sig(func):
+        if inspect.isclass(func):
+            return inspect.signature(func.__call__)
+        return inspect.signature(func)
 
     __sig = None
     def __get_singleton_sig_f(self):
         if self.__sig is not None:
             return self.__sig
         else:
-            self.__sig = Composable.__get_sig_recurse(self.__f)
+            self.__sig = Composable.__get_sig(self.__funcs[0])
             return self.__sig
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
 
-        if len(kwargs.keys()) > 0:
-            sig = self.__get_singleton_sig_f()
-            args = Composable.__get_bound_args(sig, args, kwargs)
-        
-        result = Composable.__internal_call(self.__f, self.__g, args)
-        is_single_tuple = type(result) == tuple and len(result) == 1
-        is_terminating = not self.__chained and Composable.__is_terminating(self.__f, self.__g)
-        should_unpack_result = is_terminating and is_single_tuple
-        
-        if should_unpack_result:
-            return result[0]
+        #first invocation must unpack from __call__
+        if args and not kwargs:
+            result = self.__funcs[0](*args)
+        elif args and kwargs:
+            result = self.__funcs[0](*args, **kwargs)
+        elif not args and kwargs:
+            result = self.__funcs[0](**kwargs)
+        else:
+            result = self.__funcs[0]()
 
+        #all other invocations, expecting naturally bound args via composition
+        for func in self.__funcs[1:]:
+            if result.__class__ == tuple:
+                result = func(*result)
+            else:
+                result = func(result)
+            
         return result
-
-    @staticmethod
-    def __is_terminating(f, g):
-        g_chain_state = Composable.__is_chained(g)
-
-        if g_chain_state: 
-            return True
-        
-        return Composable.__is_chained(f) is None and g_chain_state is None #is unchained
-
-    @staticmethod
-    def __internal_call(f, g, args):
-        invoke_f = Composable.__invoke_compose if isinstance(f, Composable) else Composable.__invoke_native
-        result = invoke_f(f, args)
-
-        if g is not None:
-            invoke_g = Composable.__invoke_compose if isinstance(g, Composable) else Composable.__invoke_native
-            return invoke_g(g, result)
-
-        return result
-
-    @staticmethod
-    def __invoke_compose(func, args):
-        return func(*args) if args is not None else func()
-
-    @staticmethod
-    def __invoke_native(func, args):
-        result = func(*args)
-        
-        if type(result) not in _INV_R_TYPE_PACK:
-            return (result,)
-
-        return result
-
-    @staticmethod
-    def __is_chained(target) -> Optional[bool]:
-        if target is None: 
-            return None
-        
-        if not isinstance(target, Composable): 
-            return None
-        
-        return target.__chained
 
     #partial application operator
     def __and__(self:Callable[Concatenate[A, P2], R2], param:A) -> Callable[P2, R2]:
@@ -136,7 +77,7 @@ class Composable(Generic[P, R]):
         @staticmethod
         def _bind(func, param, arg_count):
             match arg_count:
-                case 1: return Composable(lambda: func(param))()
+                case 1: return func(param)
                 case 2: return Composable(lambda x: func(param, x))
                 case 3: return Composable(lambda x1, x2: func(param, x1, x2))
                 case 4: return Composable(lambda x1, x2, x3: func(param, x1, x2, x3))
