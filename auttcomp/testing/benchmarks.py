@@ -4,7 +4,7 @@ from ..composable import Composable as f
 test_1*
 these tests demonstrate the performance impact of invoking compositions compared to native invocations
 
-pytest auttcomp/testing/benchmarks.py --benchmark
+pytest auttcomp/testing/benchmarks.py
 pytest auttcomp/testing/benchmarks.py --benchmark-histogram
 
 Original Composable:

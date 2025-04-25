@@ -15,15 +15,30 @@ A = TypeVar('A')
 IT = TypeVar('IT')
 IR = TypeVar('IR')
 
+
+def get_argc(func):
+    if inspect.isclass(func):
+        return len(inspect.signature(func.__call__).parameters)
+    return len(inspect.signature(func).parameters)
+
 class Composable(Generic[P, R]):
 
     def __init__(self, func:Callable[P, R] = None):
         self.__funcs = (func,)
+        self.__arg_count = None #lazy loaded via get_singleton_argc
+
+    def get_singleton_argc(self):
+        if self.__arg_count:
+            return self.__arg_count
+        else:
+            self.__arg_count = get_argc(self.__funcs[0])
+            return self.__arg_count
 
     #composition operator
     def __or__(self, other:Callable[[Any], OR]) -> Callable[P, OR]:
         
         new_comp = Composable()
+        new_comp.__arg_count = self.get_singleton_argc()
 
         if isinstance(other, Composable):
             new_comp.__funcs = (*self.__funcs, *other.__funcs)
@@ -32,23 +47,9 @@ class Composable(Generic[P, R]):
 
         return new_comp
 
-    @staticmethod
-    def __get_sig(func):
-        if inspect.isclass(func):
-            return inspect.signature(func.__call__)
-        return inspect.signature(func)
-
-    __sig = None
-    def __get_singleton_sig_f(self):
-        if self.__sig is not None:
-            return self.__sig
-        else:
-            self.__sig = Composable.__get_sig(self.__funcs[0])
-            return self.__sig
-
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
 
-        #first invocation must unpack from __call__
+        #first invocation args and kwargs
         if args and not kwargs:
             result = self.__funcs[0](*args)
         elif args and kwargs:
@@ -67,25 +68,26 @@ class Composable(Generic[P, R]):
             
         return result
 
+    @staticmethod
+    def __partial_app_comp_factory(func, argc):
+        comp = Composable()
+        comp.__funcs = (func,)
+        comp.__arg_count = argc - 1 #avoids a call to inspect
+        return comp
+
     #partial application operator
     def __and__(self:Callable[Concatenate[A, P2], R2], param:A) -> Callable[P2, R2]:
-        arg_count = len(self.__get_singleton_sig_f().parameters)
-        return Composable._PartialApp._bind(self, param, arg_count)
-
-    class _PartialApp:
-
-        @staticmethod
-        def _bind(func, param, arg_count):
-            match arg_count:
-                case 1: return func(param)
-                case 2: return Composable(lambda x: func(param, x))
-                case 3: return Composable(lambda x1, x2: func(param, x1, x2))
-                case 4: return Composable(lambda x1, x2, x3: func(param, x1, x2, x3))
-                case 5: return Composable(lambda x1, x2, x3, x4: func(param, x1, x2, x3, x4))
-                case 6: return Composable(lambda x1, x2, x3, x4, x5: func(param, x1, x2, x3, x4, x5))
-                case 7: return Composable(lambda x1, x2, x3, x4, x5, x6: func(param, x1, x2, x3, x4, x5, x6))
-                case 8: return Composable(lambda x1, x2, x3, x4, x5, x6, x7: func(param, x1, x2, x3, x4, x5, x6, x7))
-                case _: raise TypeError(f"unsupported argument count {arg_count}")
+        argc = self.get_singleton_argc()
+        match argc:
+            case 1: return self(param)
+            case 2: return Composable.__partial_app_comp_factory(lambda x: self(param, x), argc)
+            case 3: return Composable.__partial_app_comp_factory(lambda x1, x2: self(param, x1, x2), argc)
+            case 4: return Composable.__partial_app_comp_factory(lambda x1, x2, x3: self(param, x1, x2, x3), argc)
+            case 5: return Composable.__partial_app_comp_factory(lambda x1, x2, x3, x4: self(param, x1, x2, x3, x4), argc)
+            case 6: return Composable.__partial_app_comp_factory(lambda x1, x2, x3, x4, x5: self(param, x1, x2, x3, x4, x5), argc)
+            case 7: return Composable.__partial_app_comp_factory(lambda x1, x2, x3, x4, x5, x6: self(param, x1, x2, x3, x4, x5, x6), argc)
+            case 8: return Composable.__partial_app_comp_factory(lambda x1, x2, x3, x4, x5, x6, x7: self(param, x1, x2, x3, x4, x5, x6, x7), argc)
+            case _: raise TypeError(f"unsupported argument count {argc}")
 
     #invocation operator
     def __lt__(next_func:Callable[[IT], IR], id_func:Callable[[], IT]) -> IR:

@@ -97,3 +97,15 @@ def test_partial_callable_class():
     actual = list(plus2(data))
 
     assert actual == expected
+
+def test_partial_app_on_composition():
+    inc3 = f(lambda a, b, c: (a+1, b+1, c+1))
+    comp = inc3 | inc3
+
+    comp1 = comp & 1
+    assert comp1(2, 3) == (3, 4, 5)
+
+    comp2 = comp & 1 & 2
+    assert comp2(3) == (3, 4, 5)
+
+    assert comp & 1 & 2 & 3 == (3, 4, 5)
