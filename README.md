@@ -73,14 +73,16 @@ def get_data(url):
 data = get_data("https://api.github.com/users/auttcast/repos")
 
 id_func = f.id(data)
-just_data_models_again = id_func()
+just_data_again = id_func()
+
+assert data == just_data_again
 ```
 
 We'll explore the data with a query soon, but first we'd like to know about it's structure. It is difficult to understand the structure of the model just by looking at the raw data, so we'll use the f.shape function to help us understand it.
 
 The f.shape function accepts any data as input, and prints a summary to the console.
 
-While it is possible to call **f.shape(data)**, instead we'll start using a more query-friendly syntax like so:
+While it is possible to call **f.shape(data)**, instead we'll start using a more query-friendly (and console-friendly) syntax like so:
 
 ```python
 f.id(data) > f.shape
@@ -153,7 +155,7 @@ f.id(data) > f.map(lambda x: (x.name, x.language, x.url)) | list | pprint
 
 I noticed one of the repos does not have a language specified, so I am going to apply a filter to ensure there is a value.
 
-I'm also going to start using this alternative syntax, as it will make things easier to read...
+I'm also going to start using this alternative syntax, as it will make things easier to read as the query grows.
 
 ```python
 f.id(data) > (
@@ -164,17 +166,17 @@ f.id(data) > (
 )
 ```
 
-Next, I'll work in a download for the /branches request.
+Next, I'll work in a function to count the number of branches for the repo.
 
 ```python
-def get_branches(base_url):
+def get_branch_count(base_url):
   branch_url = f"{base_url}/branches"
   result = get_data(branch_url)
   return len(result)
 
 f.id(data) > (
   f.filter(lambda x: x.language is not None)
-  | f.map(lambda x: (x.name, x.language, get_branches(x.url))) 
+  | f.map(lambda x: (x.name, x.language, get_branch_count(x.url))) 
   | list 
   | pprint
 )
@@ -189,12 +191,12 @@ f.id(data) > (
  ('TempestWeatherDataDownload', 'PowerShell', 1)]
 ```
 
-There are many other useful functions on the extentions api
+There are many other useful functions on the extentions api...
 
 ```python
 f.id(data) > (
   f.filter(lambda x: x.language is not None)
-  | f.map(lambda x: (x.name, x.language, get_branches(x.url))) 
+  | f.map(lambda x: (x.name, x.language, get_branch_count(x.url))) 
   | f.group(lambda x: x[1]) # group by language
   | f.sort_by_desc(lambda x: len(x[1]))
   | f.take(1)
@@ -211,7 +213,7 @@ f.id(data) > (
 
 Version 3.0.0 added AsyncContext and ParallelContext
 
-Currently, only a few extention methods are supported
+Currently, only a few extention methods are supported:
 * map
 * flatmap
 * filter
@@ -230,7 +232,7 @@ from auttcomp.parallel_context import ParallelContext
 
 parallel_result = f.id(data) > ParallelContext()(lambda f:
   f.filter(lambda x: x.language is not None)
-  | f.map(lambda x: (x.name, x.language, get_branches(x.url)))
+  | f.map(lambda x: (x.name, x.language, get_branch_count(x.url)))
   | f.list
 ) 
 
@@ -262,13 +264,13 @@ async def get_data_async(url):
       response_obj = json.loads(text_result, object_hook=lambda d: SimpleNamespace(**d))
       return response_obj
 
-async def get_branches_async(base_url):
+async def get_branch_count_async(base_url):
   branch_url = f"{base_url}/branches"
   result = await get_data_async(branch_url)
   return len(result)
 
 async def with_branches_async(x):
-  branch_detail = await get_branches_async(x.url)
+  branch_detail = await get_branch_count_async(x.url)
   return (x.name, x.language, branch_detail)
 
 async def main():
@@ -290,9 +292,9 @@ asyncio.run(main())
 
 ```
 
-A lot has changed with the sample. The map func within AsyncContext (with_branches_async), get_data, and get_branches were replaced with async implementations. But the effect is that rather than having a thread blocking and waiting on the http response, the code is now able to await the response, yielding execution time to other tasks, without requiring many additional threads, yet providing the illusion that the execution is still parallel.
+A lot has changed with the sample. The map func within AsyncContext, get_data, and get_branch_count were replaced with async implementations. But the effect is that rather than having a thread blocking and waiting on the http response, the code is now able to await the response, yielding execution time to other tasks, without requiring many additional threads, yet providing the illusion that the execution is still parallel.
 
-If we look more closely at get_data_async, we may find that json.loads is actually better suited for a CPU-bound function. So for our final optimization, we will refactor this operation into a CPU-bound map. Also, since the order of AsyncContext's result does not matter (the results are sorted in a latter function), the execution_type here is set to PARALLEL_EAGER. This allows the compositions to execute as tasks are completed rather than by the ordinality of the original set.
+If we look more closely at get_data_async, we may find that json.loads is actually better suited for a CPU-bound function. So for our final optimization, we will refactor this operation into a CPU-bound map. Also, since the order of AsyncContext's result does not matter (the results are sorted in a latter function), the execution_type here is set to PARALLEL_EAGER. This allows the compositions to execute as the tasks are completed rather than by the ordinality of the original set.
 
 ```python
 import requests
@@ -310,18 +312,18 @@ async def get_data_async(url):
     async with session.get(url) as response:
       return await response.text()
 
-async def get_branches_async(base_url):
+async def get_branch_count_async(base_url):
   branch_url = f"{base_url}/branches"
   return await get_data_async(branch_url)
 
 async def with_branches_async(x):
-  branch_detail = await get_branches_async(x.url)
+  branch_detail = await get_branch_count_async(x.url)
   return (x.name, x.language, branch_detail)
 
 def from_json_to_obj(text):
   return json.loads(text, object_hook=lambda d: SimpleNamespace(**d))
 
-def get_branches_len(text):
+def get_branch_count_len(text):
   response_obj = from_json_to_obj(text)
   return len(response_obj)
 
@@ -335,7 +337,7 @@ async def main():
   async_result = await (f.id(repo_details) > AsyncContext(execution_type=ExecutionType.PARALLEL_EAGER)(lambda f:
     f.filter(lambda x: x.language is not None) #CPU-bound (see caveat below!)
     | f.map(with_branches_async) # IO-bound
-    | f.map(lambda x: (x[0], x[1], get_branches_len(x[2]))) #CPU-bound
+    | f.map(lambda x: (x[0], x[1], get_branch_count(x[2]))) #CPU-bound
     | f.list
   ))
 
