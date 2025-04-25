@@ -23,7 +23,7 @@ def get_argc(func):
 
 class Composable(Generic[P, R]):
 
-    def __init__(self, func:Callable[P, R] = None):
+    def __init__(self, func:Callable[P, R]):
         self.__funcs = (func,)
         self.__arg_count = None #lazy loaded via get_singleton_argc
 
@@ -37,7 +37,7 @@ class Composable(Generic[P, R]):
     #composition operator
     def __or__(self, other:Callable[[Any], OR]) -> Callable[P, OR]:
         
-        new_comp = Composable()
+        new_comp = Composable(None)
         new_comp.__arg_count = self.get_singleton_argc()
 
         if isinstance(other, Composable):
@@ -70,7 +70,7 @@ class Composable(Generic[P, R]):
 
     @staticmethod
     def __partial_app_comp_factory(func, argc):
-        comp = Composable()
+        comp = Composable(None)
         comp.__funcs = (func,)
         comp.__arg_count = argc - 1 #avoids a call to inspect
         return comp
@@ -79,7 +79,7 @@ class Composable(Generic[P, R]):
     def __and__(self:Callable[Concatenate[A, P2], R2], param:A) -> Callable[P2, R2]:
         argc = self.get_singleton_argc()
         match argc:
-            case 1: return self(param)
+            case 1: return self(param) #must invoke when all params are applied
             case 2: return Composable.__partial_app_comp_factory(lambda x: self(param, x), argc)
             case 3: return Composable.__partial_app_comp_factory(lambda x1, x2: self(param, x1, x2), argc)
             case 4: return Composable.__partial_app_comp_factory(lambda x1, x2, x3: self(param, x1, x2, x3), argc)

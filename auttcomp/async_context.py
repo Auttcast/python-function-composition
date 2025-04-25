@@ -1,12 +1,15 @@
 from concurrent.futures import Executor
 from enum import Enum
-from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, TypeVar, Union
+from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, ParamSpec, TypeVar, Union
 from .async_composable import AsyncComposable
-from .composable import Composable, P, R
+from .composable import Composable
 from .common import id_param
 from asyncio import AbstractEventLoop
 import asyncio
 import inspect
+
+P = ParamSpec('P')
+R = TypeVar('R')
 
 T = TypeVar('T')
 T2 = TypeVar('T2')

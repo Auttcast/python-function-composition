@@ -1,10 +1,13 @@
 from .utility import ObjUtil
-from .composable import Composable, P, R
-from typing import Callable, Any, Tuple, Iterable, TypeVar
+from .composable import Composable
+from typing import Callable, Any, ParamSpec, Tuple, Iterable, TypeVar
 from .common import id_param, KeyValuePair
 from shape_eval.service import shape as eval_shape
 import functools
 import itertools
+
+P = ParamSpec('P')
+R = TypeVar('R')
 
 T = TypeVar('T')
 T2 = TypeVar('T2')

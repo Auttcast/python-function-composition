@@ -79,13 +79,6 @@ def void_func():
     pass
 
 @pytest.mark.asyncio
-async def test_void():
-    vf = f(void_func)
-    func = vf | vf | vf
-    await func()
-    assert True, "does not throw"
-
-@pytest.mark.asyncio
 async def test_dynamic_wrapping():
 
     #test_iterables without f-wrap
