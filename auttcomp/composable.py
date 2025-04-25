@@ -61,7 +61,11 @@ class Composable(Generic[P, R]):
 
     __sig = None
     def __get_singleton_sig_f(self):
-        return self.__sig if self.__sig is not None else Composable.__get_sig_recurse(self.__f)
+        if self.__sig is not None:
+            return self.__sig
+        else:
+            self.__sig = Composable.__get_sig_recurse(self.__f)
+            return self.__sig
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
 
@@ -75,7 +79,7 @@ class Composable(Generic[P, R]):
         should_unpack_result = is_terminating and is_single_tuple
         
         if should_unpack_result:
-            result = result[0]
+            return result[0]
 
         return result
 
@@ -95,7 +99,7 @@ class Composable(Generic[P, R]):
 
         if g is not None:
             invoke_g = Composable.__invoke_compose if isinstance(g, Composable) else Composable.__invoke_native
-            result = invoke_g(g, result)
+            return invoke_g(g, result)
 
         return result
 
@@ -106,9 +110,9 @@ class Composable(Generic[P, R]):
     @staticmethod
     def __invoke_native(func, args):
         result = func(*args)
-
+        
         if type(result) not in _INV_R_TYPE_PACK:
-            result = (result,)
+            return (result,)
 
         return result
 

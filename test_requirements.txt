@@ -1,0 +1,14 @@
+coverage==7.6.12
+importlib_metadata==8.6.1
+iniconfig==2.0.0
+packaging==24.2
+pluggy==1.5.0
+py-cpuinfo==9.0.0
+pygal==3.0.5
+pygaljs==1.0.2
+pytest==8.3.4
+pytest-asyncio==0.26.0
+pytest-benchmark==5.1.0
+pytest-cov==6.0.0
+shape_eval==1.0.0
+zipp==3.21.0
