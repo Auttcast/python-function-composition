@@ -1,1 +1,14 @@
+gprof2dot==2025.4.14
+iniconfig==2.1.0
+llvmlite==0.44.0
+numba==0.61.2
+numpy==2.2.5
+packaging==25.0
+pluggy==1.5.0
+py-cpuinfo==9.0.0
+pytest==8.3.5
+pytest-benchmark==5.1.0
+pytest-profiling==1.8.1
 shape_eval==1.0.2
+six==1.17.0
+uvloop==0.21.0
