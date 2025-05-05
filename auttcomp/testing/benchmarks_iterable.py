@@ -1,4 +1,9 @@
 import concurrent.futures
+import threading
+
+import numba
+import numba.typed
+import numba.typed.listobject
 from auttcomp.async_context import AsyncContext, ExecutionType
 from auttcomp.parallel_context import ParallelContext
 from ..extensions import Api as f
@@ -138,63 +143,153 @@ def test_io_bound_processpool(benchmark):
 
         benchmark(lambda: asyncio.run(setup()))
 
-@pytest.mark.asyncio
-async def test_demo_pool():
 
-    el = asyncio.new_event_loop()
+def test_jit_baseline(benchmark):
     
+    with concurrent.futures.ProcessPoolExecutor() as pool:
 
-def test_demo_pool2():
+        def setup():
+
+            func = inc_sync
+
+            comp = ParallelContext(cpu_bound_executor=pool)(lambda f:
+                f.map(func)
+                | f.map(func)
+                | f.map(func)
+                | f.list
+            )
+
+            benchmark(lambda: comp(io_bound_data))
+
+        setup()
+
+
+def test_jit_compiled(benchmark):
+    
+    with concurrent.futures.ProcessPoolExecutor() as pool:
+
+        def setup():
+
+            func = numba.njit(inc_sync)
+
+            comp = ParallelContext(cpu_bound_executor=pool)(lambda f:
+                f.map(func)
+                | f.map(func)
+                | f.map(func)
+                | f.list
+            )
+
+            comp(io_bound_data) #seperate compilation from benchmark
+
+            benchmark(lambda: comp(io_bound_data))
+
+        setup()
+
+def test_jit_temp(benchmark):
+    '''
+    Facts:
+    -running a compiled higher order function requires the func arg also be compiled
+    -list is deprecated, use number.typed.List instead
+    -numba does not support async
+
+    Speculation:
+    -cpu-bound is single-threaded by default (because of the GIL, threads practically are broken)
+    '''
+    from numba.typed import List
+    from numba import prange
+
+
+    @numba.njit()
+    def func1(func):
+        #return List(map(func, prange(1000)))
+        result = []
+        
+        for x in prange(10):
+            result.append(func(x))
+        return result
+    
+    @numba.njit()
+    def func2(x):
+        return x+1
+    
+    #result = func1(func2, _data)
+
+    def testt():
+        #result = pool.map(func2, range(1000))
+        result = func1(func2)
+        list(result)
+
+    benchmark(testt)
+
+
+def test_llvm():
 
     '''
-    
-    in async main
-    create an additional loop
-    tasks added to additional loop are cancelled after a time limit
-    if cancelled, are deferred to main loop
-    
+    TODO
+    -iterable
+    -async gen
+    -higher order funcs
     '''
 
-    from concurrent.futures import _base
-    from concurrent.futures.thread import BrokenThreadPool, _global_shutdown_lock, _shutdown, _WorkItem
+    #from __future__ import print_function
+    from ctypes import CFUNCTYPE, c_double
+    import llvmlite.binding as llvm
 
-    class CustomThreadPoolExecutor(concurrent.futures.ThreadPoolExecutor):
-        def __init__(self):
-            super().__init__()
+    # All these initializations are required for code generation!
+    llvm.initialize()
+    llvm.initialize_native_target()
+    llvm.initialize_native_asmprinter()  # yes, even this one
 
-        #overloaded
-        def submit(self, fn, /, *args, **kwargs):
-            print(f"self._threads: {len(self._threads)} self._idle_semaphore {self._idle_semaphore._value}")
-            with self._shutdown_lock, _global_shutdown_lock:
-                if self._broken:
-                    raise BrokenThreadPool(self._broken)
+    llvm_ir = """
+    ; ModuleID = "examples/ir_fpadd.py"
+    target triple = "unknown-unknown-unknown"
+    target datalayout = ""
 
-                if self._shutdown:
-                    raise RuntimeError('cannot schedule new futures after shutdown')
-                if _shutdown:
-                    raise RuntimeError('cannot schedule new futures after '
-                                    'interpreter shutdown')
+    define double @"fpadd"(double %".1", double %".2")
+    {
+    entry:
+        %"res" = fadd double %".1", %".2"
+        ret double %"res"
+    }
+    """
+ 
+    def create_execution_engine():
+        """
+        Create an ExecutionEngine suitable for JIT code generation on
+        the host CPU.  The engine is reusable for an arbitrary number of
+        modules.
+        """
+        # Create a target machine representing the host
+        target = llvm.Target.from_default_triple()
+        target_machine = target.create_target_machine()
+        # And an execution engine with an empty backing module
+        backing_mod = llvm.parse_assembly("")
+        engine = llvm.create_mcjit_compiler(backing_mod, target_machine)
+        return engine
 
-                f = _base.Future()
-                w = _WorkItem(f, fn, args, kwargs)
 
-                self._work_queue.put(w)
+    def compile_ir(engine, llvm_ir):
+        """
+        Compile the LLVM IR string with the given engine.
+        The compiled module object is returned.
+        """
+        # Create a LLVM module object from the IR
+        mod = llvm.parse_assembly(llvm_ir)
+        mod.verify()
+        # Now add the module and make sure it is ready for execution
+        engine.add_module(mod)
+        engine.finalize_object()
+        engine.run_static_constructors()
+        return mod
 
-                if len(self._threads) < 1:
-                    self._adjust_thread_count()
 
-                #self._adjust_thread_count()
+    engine = create_execution_engine()
+    mod = compile_ir(engine, llvm_ir)
 
-                return f
+    # Look up the function pointer (a Python int)
+    func_ptr = engine.get_function_address("fpadd")
 
-    data = list(range(0, 100))
-    context = ParallelContext(cpu_bound_executor=CustomThreadPoolExecutor())
-
-    start = time.time()
-    r = f.id(data) > context(lambda f: (
-        f.map(lambda x: x+1)
-        | f.list
-    ))
-    end = time.time()
-
-    print(f"duration: {end - start} result len: {len(r)}")
+    # Run the function via ctypes
+    cfunc = CFUNCTYPE(c_double, c_double, c_double)(func_ptr)
+    res = cfunc(1, 3.5)
+    print(f"{type(cfunc)} fpadd(...) =", res)

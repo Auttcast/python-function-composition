@@ -1,6 +1,8 @@
 from concurrent.futures import Executor
 from enum import Enum
 from typing import Any, AsyncGenerator, Awaitable, Callable, Coroutine, Iterable, ParamSpec, TypeVar, Union
+
+import numba
 from .async_composable import AsyncComposable
 from .composable import Composable
 from .common import id_param
@@ -121,7 +123,8 @@ class _ExtensionFactory:
 
     def create_cpu_bound_invocation(self, func):
         async def partial_invoke_cpu_bound(*args):
-            return await self.__loop.run_in_executor(self.__executor, func, *args)
+            #return await self.__loop.run_in_executor(self.__executor, func, *args)
+            return func(*args)
         return partial_invoke_cpu_bound
 
     def coerce_async(self, func):
@@ -129,7 +132,7 @@ class _ExtensionFactory:
             return func
         else:
             return self.create_cpu_bound_invocation(func)
-        
+    
     def create_map(self):
 
         @Composable
