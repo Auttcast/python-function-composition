@@ -33,7 +33,7 @@ class AsyncComposable(Generic[P, R]):
     def __or__(self, other:Callable[[Any], Awaitable[OR]]) -> Callable[P, Awaitable[OR]]:
         
         new_comp = AsyncComposable(None)
-        new_comp.__arg_count = self.get_singleton_argc()
+        new_comp.__arg_count = self.__arg_count
 
         if isinstance(other, AsyncComposable):
             new_comp.__funcs = (*self.__funcs, *other.__funcs)

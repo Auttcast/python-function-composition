@@ -38,7 +38,7 @@ class Composable(Generic[P, R]):
     def __or__(self, other:Callable[[Any], OR]) -> Callable[P, OR]:
         
         new_comp = Composable(None)
-        new_comp.__arg_count = self.get_singleton_argc()
+        new_comp.__arg_count = self.__arg_count
 
         if isinstance(other, Composable):
             new_comp.__funcs = (*self.__funcs, *other.__funcs)
