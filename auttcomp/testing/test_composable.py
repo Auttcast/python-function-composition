@@ -115,3 +115,20 @@ def test_comp_intermediate_null():
     comp = get_1 | returns_none | f(lambda x: str(x))
 
     assert comp() == 'None'
+
+def test_composable_method():
+
+    class TestClass:
+
+        def do_add(self, value):
+            return value + 1
+
+        @f
+        def add_one_method(self, value):
+            return self.do_add(value)
+        
+    tc = TestClass()
+    madd = TestClass.add_one_method & tc
+    comp = madd | madd
+
+    assert comp(1) == 3
