@@ -260,6 +260,24 @@ class Api(Composable[P, R]):
     
     @staticmethod
     @Composable
+    def unzip(selector:Callable[[Iterable[T]], Tuple]) -> Callable[[Iterable[T]], Tuple]:
+        
+        @Composable
+        def partial_unzip(data:Iterable[T]) -> Tuple:
+
+            result = list(map(lambda x: [x], selector(data[0])))
+
+            for x in data[1:]:
+                next_r = selector(x)
+                for i in range(len(result)):
+                    result[i].append(next_r[i])
+
+            return (*result,)
+        
+        return partial_unzip
+    
+    @staticmethod
+    @Composable
     def flatnest(path_selector:Callable[[Any], Any], data_selector:Callable[[Any], Any]) -> Callable[[Any], Iterable[Any]]:
         '''yield properties of a recursive structure by data_selector, following the path_selector'''
 

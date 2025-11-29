@@ -203,6 +203,16 @@ def test_zip():
 
     assert actual == expected
 
+def test_unzip():
+    data = [(1, "a", "A"), (2, "b", "B"), (3, "c", "C")]
+    expected1 = ["a", "b", "c"]
+    expected2 = ["A", "B", "C"]
+
+    (actual1, actual2) = f.unzip(lambda x: (x[1], x[2]))(data)
+
+    assert actual1 == expected1
+    assert actual2 == expected2
+
 def test_flatnest():
     data = {
         "depth": 1,
