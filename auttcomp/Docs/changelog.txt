@@ -1,9 +1,3 @@
-4.0.0
-performance improvement to Composable, optimizing for __call__
-Composable's __call__ greatly exceeded the cost of native invocations due to unnecessary intermediate invocations (to other Composables) which
-required additional logic around packing/unpacking results/args. This version improves performance by rethinking the purpose of Composable
-as an immutable container of compositions, rather than pointers to f and g. Consequently, composition of void funcs was removed.
-
 3.0.0
 added AsyncContext and ParallelContext
 replaced reduce2 with reduce optional arg
@@ -12,6 +6,10 @@ removed quicklog
 moved shape_eval to dedicated proj
 bug fix: fixed composable state issue which prevented result unpacking
 bug fix: prepending a composable to existing composition missing __g invocation
+performance improvement to Composable, optimizing for __call__
+Composable's __call__ greatly exceeded the cost of native invocations due to unnecessary intermediate invocations (to other Composables) which
+required additional logic around packing/unpacking results/args. This version improves performance by rethinking the purpose of Composable
+as an immutable container of compositions, rather than pointers to f and g. Consequently, composition of void funcs was removed.
 
 2.0.1
 Identity functions are no longer created using Composable directly, instead the .id extension method was added.
