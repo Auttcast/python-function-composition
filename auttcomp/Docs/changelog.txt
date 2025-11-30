@@ -1,3 +1,6 @@
+3.1.0
+added unzip
+
 3.0.0
 added AsyncContext and ParallelContext
 replaced reduce2 with reduce optional arg
