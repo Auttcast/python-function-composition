@@ -5,6 +5,20 @@ build-backend = "hatchling.build"
 [tool.setuptools.packages.find]
 exclude = ["testing*"]
 
+[tool.hatch.build]
+exclude = [
+  ".envjit",
+  ".venv",
+  ".env",
+  "__pypackages__",
+  ".git",
+  "*.pyc",
+  "__pycache__",
+  ".benchmarks",
+  "htmlcov",
+  ".coverage"
+]
+
 [project]
 name = "auttcomp"
 version = "3.1.0"
