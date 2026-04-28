@@ -223,17 +223,27 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def to_dict(key_selector: Callable[[T], K], value_selector: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], dict[K, R]]:
-        '''return a dict by applying the key_selector and value_selector to each item in the iterable. If duplicate keys are found, an exception is raised.'''
+    def to_dict(key_selector: Callable[[T], K] = None, value_selector: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], dict[K, R]]:
+        '''return a dict by applying the key_selector and value_selector to each item in the iterable.
+        If duplicate keys are found, an exception is raised.
+        If key_selector is None, we assume the collection contains dicts where keys are already selected.'''
 
         @Composable
         def partial_to_dict(data: Iterable[T]) -> dict[K, R]:
             result = {}
-            for x in data:
-                key = key_selector(x)
-                if key in result:
-                    raise ValueError("Duplicate key found")
-                result[key] = value_selector(x)
+
+            if key_selector is None:
+                for d in data:
+                    for key in d.keys():
+                        if key in result:
+                            raise ValueError("Duplicate key found")
+                        result[key] = value_selector(list(d.values())[0])
+            else:
+                for d in data:
+                    key = key_selector(d)
+                    if key in result:
+                        raise ValueError("Duplicate key found")
+                    result[key] = value_selector(d)
             return result
 
         return partial_to_dict

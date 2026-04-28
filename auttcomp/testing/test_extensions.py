@@ -195,6 +195,44 @@ def test_to_dict_duplicate_keys():
     except ValueError:
         pass
     
+def test_to_dict_none_key_selector_convention():
+    data = [
+        {1: "TAG1"},
+        {2: "TAG2"},
+        {3: "TAG1"},
+        {4: "TAG2"}
+    ]
+
+    expected = {
+        1: "TAG1",
+        2: "TAG2",
+        3: "TAG1",
+        4: "TAG2"
+    }
+
+    actual = f.to_dict()(data)
+    
+    assert actual == expected
+
+def test_to_dict_group_convention():
+    data = [
+        {"id": 1, "tag": "TAG1", 'foo': 'foo1'},
+        {"id": 2, "tag": "TAG2"},
+        {"id": 3, "tag": "TAG1"},
+        {"id": 4, "tag": "TAG2"}
+    ]
+
+    expected = {
+        1: "TAG1",
+        2: "TAG2",
+        3: "TAG1",
+        4: "TAG2"
+    }
+
+    actual = f.id(data) > f.group(lambda x: x['id']) | f.to_dict(value_selector=lambda x: x[0]['tag'])
+    
+    assert actual == expected
+
 def test_join():
 
     dataFoo = [
