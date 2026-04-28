@@ -1,7 +1,7 @@
 from .utility import ObjUtil
 from .composable import Composable
 from typing import Callable, Any, ParamSpec, Tuple, Iterable, TypeVar
-from .common import id_param, KeyValuePair
+from .common import id_param
 from shape_eval.service import shape as eval_shape
 import functools
 import itertools
@@ -208,18 +208,35 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def group(func: Callable[[T], K] = id_param) -> Callable[[Iterable[T]], Iterable[KeyValuePair[K, Iterable[T]]]]:
+    def group(func: Callable[[T], K] = id_param) -> Callable[[Iterable[T]], Iterable[dict[K, Iterable[T]]]]:
         '''curried version of itertools.groupby
         sort by key is used before grouping to achieve singular grouping
         this implementation runs the iterable for the grouping, but yields the key/value pair as a new iterable
         '''
 
         @Composable
-        def partial_group(data: Iterable[T]) -> Iterable[KeyValuePair[R, Iterable[T]]]:
+        def partial_group(data: Iterable[T]) -> Iterable[dict[R, Iterable[T]]]:
             for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=func), key=func):
-                yield KeyValuePair(key, ObjUtil.exec_generator(value))
+                yield {key: list(ObjUtil.exec_generator(value))}
 
         return partial_group
+
+    @staticmethod
+    @Composable
+    def to_dict(key_selector: Callable[[T], K], value_selector: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], dict[K, R]]:
+        '''return a dict by applying the key_selector and value_selector to each item in the iterable. If duplicate keys are found, an exception is raised.'''
+
+        @Composable
+        def partial_to_dict(data: Iterable[T]) -> dict[K, R]:
+            result = {}
+            for x in data:
+                key = key_selector(x)
+                if key in result:
+                    raise ValueError("Duplicate key found")
+                result[key] = value_selector(x)
+            return result
+
+        return partial_to_dict
 
     @staticmethod
     @Composable
@@ -238,12 +255,12 @@ class Api(Composable[P, R]):
             right_group = Api.group(right_key_func)(right_data)
 
             tracker = {}
-            for lg in left_group:
-                tracker[lg.key] = lg.value
-            for rg in right_group:
-                lv = tracker.get(rg.key)
+            for key, value in list(list(left_group).items()):
+                tracker[key] = value
+            for key, value in list(list(right_group).items()):
+                lv = tracker.get(key)
                 if lv is not None:
-                    yield rg.key, (list(map(left_value_selector, lv)), list(map(right_value_selector, rg.value)))
+                    yield {key: (list(map(left_value_selector, lv)), list(map(right_value_selector, value)))}
 
         return partial_join
 

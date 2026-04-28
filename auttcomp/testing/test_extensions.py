@@ -1,6 +1,4 @@
-import time
-from auttcomp.parallel_context import ParallelContext
-from ..extensions import KeyValuePair, Api as f
+from ..extensions import Api as f
 from .base_test import get_hugging_face_sample
 
 def test_id():
@@ -131,14 +129,14 @@ def test_group():
     ]
 
     expected = [
-        KeyValuePair("TAG1", [
+        {"TAG1": [
             {"id": 1, "tag": "TAG1"},
             {"id": 3, "tag": "TAG1"}
-        ]),
-        KeyValuePair("TAG2", [
+        ]},
+        {"TAG2": [
             {"id": 2, "tag": "TAG2"},
             {"id": 4, "tag": "TAG2"}
-        ])
+        ]}
     ]
 
     gen = f.group(lambda x: x['tag'])
@@ -147,7 +145,37 @@ def test_group():
     
     assert actual == expected
 
+def test_to_dict():
+    data = [
+        {"id": 1, "tag": "TAG1"},
+        {"id": 2, "tag": "TAG2"},
+        {"id": 3, "tag": "TAG1"},
+        {"id": 4, "tag": "TAG2"}
+    ]
 
+    expected = {
+        1: {"id": 1, "tag": "TAG1"},
+        2: {"id": 2, "tag": "TAG2"},
+        3: {"id": 3, "tag": "TAG1"},
+        4: {"id": 4, "tag": "TAG2"}
+    }
+
+    actual = f.to_dict(lambda x: x['id'])(data)
+    
+    assert actual == expected
+
+def test_to_dict_duplicate_keys():
+    data = [
+        {"id": 1, "tag": "TAG1"},
+        {"id": 1, "tag": "TAG2"}
+    ]
+
+    try:
+        f.to_dict(lambda x: x['id'])(data)
+        raise AssertionError("expected to throw ValueError because of duplicate keys")
+    except ValueError:
+        pass
+    
 def test_join():
 
     dataFoo = [
@@ -167,10 +195,10 @@ def test_join():
     ]
 
     expected = [
-        (1, (["foo1"], ["bar1"])),
-        (2, (["foo2"], ["bar2"])),
-        (3, (["foo3"], ["bar3"])),
-        (4, (["foo4"], ["bar4"]))
+        {1: (["foo1"], ["bar1"])},
+        {2: (["foo2"], ["bar2"])},
+        {3: (["foo3"], ["bar3"])},
+        {4: (["foo4"], ["bar4"])}
     ]
     
     gen = f.join(
