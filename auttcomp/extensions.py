@@ -208,15 +208,15 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def group(func: Callable[[T], K] = id_param) -> Callable[[Iterable[T]], Iterable[dict[K, Iterable[T]]]]:
+    def group(key_selector: Callable[[T], K] = id_param) -> Callable[[Iterable[T]], Iterable[dict[K, Iterable[T]]]]:
         '''curried version of itertools.groupby
         sort by key is used before grouping to achieve singular grouping
-        this implementation runs the iterable for the grouping, but yields the key/value pair as a new iterable
+        this implementation runs the iterable for the grouping, but yields the key/value pair
         '''
 
         @Composable
-        def partial_group(data: Iterable[T]) -> Iterable[dict[R, Iterable[T]]]:
-            for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=func), key=func):
+        def partial_group(data: Iterable[T]) -> Iterable[dict[K, Iterable[T]]]:
+            for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=key_selector), key=key_selector):
                 yield {key: list(ObjUtil.exec_generator(value))}
 
         return partial_group
