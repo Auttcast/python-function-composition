@@ -229,24 +229,29 @@ class Api(Composable[P, R]):
         If key_selector is None, we assume the collection contains dicts where keys are already selected.'''
 
         @Composable
-        def partial_to_dict(data: Iterable[T]) -> dict[K, R]:
+        def partial_to_dict_no_key_selector(data: Iterable[T]) -> dict[K, R]:
             result = {}
-
-            if key_selector is None:
-                for d in data:
-                    for key in d.keys():
-                        if key in result:
-                            raise ValueError("Duplicate key found")
-                        result[key] = value_selector(list(d.values())[0])
-            else:
-                for d in data:
-                    key = key_selector(d)
+            for d in data:
+                for key in d.keys():
                     if key in result:
                         raise ValueError("Duplicate key found")
-                    result[key] = value_selector(d)
+                    result[key] = value_selector(list(d.values())[0])
             return result
 
-        return partial_to_dict
+        @Composable
+        def partial_to_dict(data: Iterable[T]) -> dict[K, R]:
+            result = {}
+            for d in data:
+                key = key_selector(d)
+                if key in result:
+                    raise ValueError("Duplicate key found")
+                result[key] = value_selector(d)
+            return result
+        
+        if key_selector is None:
+            return partial_to_dict_no_key_selector
+        else:
+            return partial_to_dict
 
     @staticmethod
     @Composable
