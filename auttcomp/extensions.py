@@ -266,14 +266,12 @@ class Api(Composable[P, R]):
 
         @Composable
         def partial_join(right_data: Iterable[T2]) -> Iterable[Tuple[K, Tuple[T, T2]]]:
-            left_group = Api.group(left_key_func)(left_data)
+            left_group_dict = Api.id(left_data) > Api.group(left_key_func) | Api.to_dict()
             right_group = Api.group(right_key_func)(right_data)
 
-            tracker = {}
-            for key, value in list(list(left_group).items()):
-                tracker[key] = value
-            for key, value in list(list(right_group).items()):
-                lv = tracker.get(key)
+            for d in right_group:
+                (key, value) = next(iter(d.items()))
+                lv = left_group_dict.get(key)
                 if lv is not None:
                     yield {key: (list(map(left_value_selector, lv)), list(map(right_value_selector, value)))}
 
