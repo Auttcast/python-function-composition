@@ -1,7 +1,4 @@
-import asyncio
-import time
 from ..parallel_context import ParallelContext
-from ..extensions import Api as f
 
 def test_parallel_list_result():
 

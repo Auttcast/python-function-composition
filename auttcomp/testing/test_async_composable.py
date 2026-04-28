@@ -1,9 +1,4 @@
-from selectors import EpollSelector
-import time
-
-from auttcomp.async_context import AsyncContext
 from ..async_composable import AsyncComposable as f
-import asyncio
 import pytest
 
 #to examine support for type hinting

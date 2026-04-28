@@ -1,5 +1,4 @@
 from auttcomp.common import KeyValuePair
-
 from ..extensions import Api as f
 from .base_test import get_hugging_face_sample
 

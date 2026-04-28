@@ -2,7 +2,7 @@ import asyncio
 import pytest
 import threading
 from ..extensions import Api as f
-from typing import Any, AsyncGenerator
+from typing import AsyncGenerator
 from ..async_context import AsyncContext
 
 @pytest.mark.asyncio

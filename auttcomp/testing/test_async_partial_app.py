@@ -1,5 +1,4 @@
 from typing import Callable
-
 from auttcomp.async_context import AsyncContext
 from ..async_composable import AsyncComposable as f
 import pytest
