@@ -1,7 +1,7 @@
 from .utility import ObjUtil
 from .composable import Composable
 from typing import Callable, Any, ParamSpec, Tuple, Iterable, TypeVar
-from .common import id_param
+from .common import id_param, KeyValuePair
 from shape_eval.service import shape as eval_shape
 import functools
 import itertools
@@ -217,7 +217,7 @@ class Api(Composable[P, R]):
         @Composable
         def partial_group(data: Iterable[T]) -> Iterable[dict[K, Iterable[T]]]:
             for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=key_selector), key=key_selector):
-                yield {key: list(ObjUtil.exec_generator(value))}
+                yield KeyValuePair(key, list(ObjUtil.exec_generator(value)))
 
         return partial_group
 
@@ -231,11 +231,10 @@ class Api(Composable[P, R]):
         @Composable
         def partial_to_dict_no_key_selector(data: Iterable[T]) -> dict[K, R]:
             result = {}
-            for d in data:
-                for key in d.keys():
-                    if key in result:
-                        raise ValueError("Duplicate key found")
-                    result[key] = value_selector(list(d.values())[0])
+            for key, value in data:
+                if key in result:
+                    raise ValueError("Duplicate key found")
+                result[key] = value_selector(value)
             return result
 
         @Composable
@@ -269,11 +268,10 @@ class Api(Composable[P, R]):
             left_group_dict = Api.id(left_data) > Api.group(left_key_func) | Api.to_dict()
             right_group = Api.group(right_key_func)(right_data)
 
-            for d in right_group:
-                (key, value) = next(iter(d.items()))
+            for key, value in right_group:
                 lv = left_group_dict.get(key)
                 if lv is not None:
-                    yield {key: (list(map(left_value_selector, lv)), list(map(right_value_selector, value)))}
+                    yield KeyValuePair(key=key, value=(list(map(left_value_selector, lv)), list(map(right_value_selector, value))))
 
         return partial_join
 

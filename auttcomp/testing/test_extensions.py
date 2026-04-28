@@ -1,3 +1,5 @@
+from auttcomp.common import KeyValuePair
+
 from ..extensions import Api as f
 from .base_test import get_hugging_face_sample
 
@@ -129,14 +131,14 @@ def test_group():
     ]
 
     expected = [
-        {"TAG1": [
+        KeyValuePair(key="TAG1", value=[
             {"id": 1, "tag": "TAG1"},
             {"id": 3, "tag": "TAG1"}
-        ]},
-        {"TAG2": [
+        ]),
+        KeyValuePair(key="TAG2", value=[
             {"id": 2, "tag": "TAG2"},
             {"id": 4, "tag": "TAG2"}
-        ]}
+        ])
     ]
 
     gen = f.group(lambda x: x['tag'])
@@ -197,10 +199,10 @@ def test_to_dict_duplicate_keys():
     
 def test_to_dict_none_key_selector_convention():
     data = [
-        {1: "TAG1"},
-        {2: "TAG2"},
-        {3: "TAG1"},
-        {4: "TAG2"}
+        KeyValuePair(key=1, value="TAG1"),
+        KeyValuePair(key=2, value="TAG2"),
+        KeyValuePair(key=3, value="TAG1"),
+        KeyValuePair(key=4, value="TAG2")
     ]
 
     expected = {
@@ -252,10 +254,10 @@ def test_join():
     ]
 
     expected = [
-        {1: (["foo1"], ["bar1"])},
-        {2: (["foo2"], ["bar2"])},
-        {3: (["foo3"], ["bar3"])},
-        {4: (["foo4"], ["bar4"])}
+        KeyValuePair(key=1, value=(["foo1"], ["bar1"])),
+        KeyValuePair(key=2, value=(["foo2"], ["bar2"])),
+        KeyValuePair(key=3, value=(["foo3"], ["bar3"])),
+        KeyValuePair(key=4, value=(["foo4"], ["bar4"]))
     ]
     
     gen = f.join(
