@@ -164,6 +164,25 @@ def test_to_dict():
     
     assert actual == expected
 
+def test_to_dict_value_selector():
+    data = [
+        {"id": 1, "tag": "TAG1"},
+        {"id": 2, "tag": "TAG2"},
+        {"id": 3, "tag": "TAG1"},
+        {"id": 4, "tag": "TAG2"}
+    ]
+
+    expected = {
+        1: "TAG1",
+        2: "TAG2",
+        3: "TAG1",
+        4: "TAG2"
+    }
+
+    actual = f.to_dict(lambda x: x['id'], lambda x: x['tag'])(data)
+    
+    assert actual == expected
+
 def test_to_dict_duplicate_keys():
     data = [
         {"id": 1, "tag": "TAG1"},
