@@ -1,3 +1,7 @@
+3.2.0
+added to_dict
+refactoring to group and join based on to_dict
+
 3.1.0
 added unzip
 
