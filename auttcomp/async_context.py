@@ -213,6 +213,7 @@ class AsyncApi(AsyncComposable[P, R]):
         self.flatmap = factory.create_flatmap()
         self.filter = factory.create_filter()
         self.list = factory.create_list()
+        self.foreach = factory.create_foreach()
         
 class AsyncContext:
 

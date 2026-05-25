@@ -136,3 +136,29 @@ async def test_async_flatmap():
     assert async_result == [1, 2, 3]
     assert sync_result == [1, 2, 3]
 
+
+@pytest.mark.asyncio
+async def test_async_foreach():
+
+    data = [1, 2, 3]
+
+    async_result = []
+    sync_result = []
+
+    async def foreach_async(x):
+        async_result.append(x)
+
+    def foreach_sync(x):
+        sync_result.append(x)
+    
+    await (f.id(data) > AsyncContext()(lambda f: (
+        f.foreach(foreach_async)
+    )))
+
+    await (f.id(data) > AsyncContext()(lambda f: (
+        f.foreach(foreach_sync)
+    )))
+
+    assert async_result == [1, 2, 3]
+    assert sync_result == [1, 2, 3]
+
