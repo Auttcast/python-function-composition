@@ -1,3 +1,6 @@
+3.3.0
+added async/parallel context foreach
+
 3.2.0
 added to_dict
 refactoring to group and join based on to_dict

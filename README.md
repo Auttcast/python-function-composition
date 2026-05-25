@@ -218,6 +218,7 @@ Currently, only a few extention methods are supported:
 * flatmap
 * filter
 * list
+* foreach
 
 Implementation Details:
 * Both AsyncContext and ParallelContext are designed parallel-first. In fact, ParallelContext is basically just a wrapper around AsyncContext (using asyncio.run internally), so they offer practically the same functionality.
