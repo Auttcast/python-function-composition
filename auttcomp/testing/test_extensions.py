@@ -394,6 +394,25 @@ def test_chunk():
     assert result[1] == [3, 4, 5]
     assert result[2] == [6, 7]
 
+def test_chunk_2():
+    
+    data = [1, 2, 3, 4, 5, 6]
+
+    result = list(f.chunk(2)(data))
+
+    assert len(result) == 3
+    assert result[0] == [1, 2]
+    assert result[1] == [3, 4]
+    assert result[2] == [5, 6]
+
+def test_chunk_throw_when_count_lt_1():
+    
+    try:
+        list(f.chunk(0)([1, 2, 3]))
+        raise "needs to throw"
+    except:
+        pass
+
 def test_shape_eval():
 
     data = [

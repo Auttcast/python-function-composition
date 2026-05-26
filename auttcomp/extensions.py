@@ -364,6 +364,8 @@ class Api(Composable[P, R]):
     @Composable
     def chunk(count:int) -> Callable[[Iterable[T]], Iterable[Iterable[T]]]:
     
+        assert count > 0, "count must be greater than 0"
+
         @Composable
         def partial_chunk(data:Iterable[T]) -> Iterable[list[T]]:
             
@@ -373,12 +375,13 @@ class Api(Composable[P, R]):
             keep_batching = True
             while keep_batching:
                 try:
-                    for x in range(0, count):
+                    for _ in range(0, count):
                         batch.append(next(it))
                 except StopIteration:
                     keep_batching = False
                 finally:
-                    yield batch
+                    if len(batch) > 0:
+                        yield batch
                     batch = []
 
         return partial_chunk
