@@ -1,3 +1,6 @@
+3.3.1
+bug fix: chunk yielded an empty batch
+
 3.3.0
 added async/parallel context foreach
 
