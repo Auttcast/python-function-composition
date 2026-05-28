@@ -1,3 +1,6 @@
+3.4.0
+added mapi (map with index)
+
 3.3.1
 bug fix: chunk yielded an empty batch
 

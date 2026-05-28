@@ -13,6 +13,12 @@ def test_map():
     actual = list(gen)
     assert actual == [2, 3, 4]
 
+def test_mapi():
+    data = ['a', 'b', 'c']
+    gen = f.mapi(lambda x, i: (i, x))(data)
+    actual = list(gen)
+    assert actual == [(0, 'a'), (1, 'b'), (2, 'c')]
+
 def test_filter():
     data = [1, 2, 3]
     gen = f.filter(lambda x: x % 2 == 0)(data)

@@ -46,6 +46,20 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
+    def mapi(func: Callable[[T, int], R]) -> Callable[[Iterable[T]], Iterable[R]]:
+        '''
+        map with index
+        '''
+
+        @Composable
+        def partial_map(data: Iterable[T]) -> Iterable[R]:
+            for index, element in enumerate(data):
+                yield func(element, index)
+
+        return partial_map
+
+    @staticmethod
+    @Composable
     def foreach(func: Callable[[T], R]) -> Callable[[Iterable[T]], None]:
         '''exec the func for each element in the iterable'''
 
@@ -97,6 +111,8 @@ class Api(Composable[P, R]):
         '''a general purpose distinct implementation where performance is not required
         if your data is compatible, you may be able to use distinctSet
         '''
+
+
 
         return list(functools.reduce(lambda a, b: a + [b] if b not in a else a, data, []))
 
