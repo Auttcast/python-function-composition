@@ -292,22 +292,19 @@ class Api(Composable[P, R]):
     @Composable
     def join(
         left_data: Iterable[T],
-        left_key_func: Callable[[T], K],
-        right_key_func: Callable[[T], K],
-        left_value_selector: Callable[[T], Any] = id_param,
-        right_value_selector: Callable[[T], Any] = id_param
-    ) -> Callable[[T2], Iterable[Tuple[K, Tuple[T, T2]]]]:
-        '''(inner join) combine two groups by key'''
+        left_key_selector: Callable[[T], K],
+        right_key_selector: Callable[[T2], K],
+        result_selector: Callable[[T, T2], R] = lambda l, r: (l, r),
+    ) -> Callable[[T2], Iterable[KeyValuePair[K, R]]]:
+        '''inner join two collections by key'''
 
         @Composable
-        def partial_join(right_data: Iterable[T2]) -> Iterable[Tuple[K, Tuple[T, T2]]]:
-            left_group_dict = Api.id(left_data) > Api.group(left_key_func) | Api.to_dict()
-            right_group = Api.group(right_key_func)(right_data)
+        def partial_join(right_data: Iterable[T2]) -> Iterable[KeyValuePair[K, R]]:
+            left_dict = Api.to_dict(left_key_selector)(left_data)
+            right_dict = Api.to_dict(right_key_selector)(right_data)
 
-            for key, value in right_group:
-                lv = left_group_dict.get(key)
-                if lv is not None:
-                    yield KeyValuePair(key=key, value=(list(map(left_value_selector, lv)), list(map(right_value_selector, value))))
+            for key in set(left_dict.keys()).intersection(set(right_dict.keys())):
+                yield KeyValuePair(key=key, value=result_selector(left_dict[key], right_dict[key]))
 
         return partial_join
 

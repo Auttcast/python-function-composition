@@ -364,18 +364,17 @@ def test_join():
     ]
 
     expected = [
-        KeyValuePair(key=1, value=(["foo1"], ["bar1"])),
-        KeyValuePair(key=2, value=(["foo2"], ["bar2"])),
-        KeyValuePair(key=3, value=(["foo3"], ["bar3"])),
-        KeyValuePair(key=4, value=(["foo4"], ["bar4"]))
+        KeyValuePair(key=1, value=("foo1", "bar1")),
+        KeyValuePair(key=2, value=("foo2", "bar2")),
+        KeyValuePair(key=3, value=("foo3", "bar3")),
+        KeyValuePair(key=4, value=("foo4", "bar4"))
     ]
     
     gen = f.join(
         left_data=dataFoo,
-        left_key_func=lambda x: x['foo_id'],
-        right_key_func=lambda x: x['bar_id'],
-        left_value_selector=lambda x: x['foo'],
-        right_value_selector=lambda x: x['bar']
+        left_key_selector=lambda x: x['foo_id'],
+        right_key_selector=lambda x: x['bar_id'],
+        result_selector=lambda l, r: (l['foo'], r['bar'])
     )(dataBar)
     
     actual = list(gen)
