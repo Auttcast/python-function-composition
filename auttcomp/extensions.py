@@ -108,13 +108,16 @@ class Api(Composable[P, R]):
     @staticmethod
     @Composable
     def distinct(selector: Callable[[T], R] = None) -> Callable[[Iterable[T]], Iterable[R]]:
-        '''implementation of distinct using python's set, but limited to qualifying primitive types'''
+        '''returns the distinct items as a set.\n\n(optional) selector for targeting properties
+        '''
 
         if selector is None:
+            @Composable
             def partial_set_default(data: Iterable[T]) -> Iterable[R]:
                 return set(data)
             return partial_set_default
         else:
+            @Composable
             def partial_set_selector(data: Iterable[T]) -> Iterable[R]:
                 return set(map(selector, data))
             return partial_set_selector
@@ -241,28 +244,28 @@ class Api(Composable[P, R]):
         If duplicate keys are found, an exception is raised.
         If key_selector is None, we assume the collection contains dicts where keys are already selected.'''
 
-        @Composable
-        def partial_to_dict_no_key_selector(data: Iterable[T]) -> dict[K, R]:
-            result = {}
-            for key, value in data:
-                if key in result:
-                    raise ValueError("Duplicate key found")
-                result[key] = value_selector(value)
-            return result
-
-        @Composable
-        def partial_to_dict(data: Iterable[T]) -> dict[K, R]:
-            result = {}
-            for d in data:
-                key = key_selector(d)
-                if key in result:
-                    raise ValueError("Duplicate key found")
-                result[key] = value_selector(d)
-            return result
-        
         if key_selector is None:
+            @Composable
+            def partial_to_dict_no_key_selector(data: Iterable[T]) -> dict[K, R]:
+                result = {}
+                for key, value in data:
+                    if key in result:
+                        raise ValueError("Duplicate key found")
+                    result[key] = value_selector(value)
+                return result
+
             return partial_to_dict_no_key_selector
         else:
+            @Composable
+            def partial_to_dict(data: Iterable[T]) -> dict[K, R]:
+                result = {}
+                for d in data:
+                    key = key_selector(d)
+                    if key in result:
+                        raise ValueError("Duplicate key found")
+                    result[key] = value_selector(d)
+                return result
+            
             return partial_to_dict
 
     @staticmethod
