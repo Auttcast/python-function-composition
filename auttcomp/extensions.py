@@ -107,18 +107,17 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def distinct(selector: Callable[[T], R] = None) -> Callable[[Iterable[T]], Iterable[R]]:
-        '''returns the distinct items as a set.\n\n(optional) selector for targeting properties
-        '''
+    def distinct(selector: Callable[[T], R] = None) -> Callable[[Iterable[T]], set[R]]:
+        '''returns the distinct items as a set.\n\n(optional) selector for targeting properties'''
 
         if selector is None:
             @Composable
-            def partial_set_default(data: Iterable[T]) -> Iterable[R]:
+            def partial_set_default(data: Iterable[T]) -> set[R]:
                 return set(data)
             return partial_set_default
         else:
             @Composable
-            def partial_set_selector(data: Iterable[T]) -> Iterable[R]:
+            def partial_set_selector(data: Iterable[T]) -> set[R]:
                 return set(map(selector, data))
             return partial_set_selector
 
@@ -224,7 +223,7 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def group(key_selector: Callable[[T], K] = id_param) -> Callable[[Iterable[T]], Iterable[dict[K, Iterable[T]]]]:
+    def group(key_selector: Callable[[T], K] = id_param, value_selector: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], Iterable[dict[K, Iterable[R]]]]:
         '''curried version of itertools.groupby
         sort by key is used before grouping to achieve singular grouping
         this implementation runs the iterable for the grouping, but yields the key/value pair
@@ -233,7 +232,7 @@ class Api(Composable[P, R]):
         @Composable
         def partial_group(data: Iterable[T]) -> Iterable[dict[K, Iterable[T]]]:
             for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=key_selector), key=key_selector):
-                yield KeyValuePair(key, list(ObjUtil.exec_generator(value)))
+                yield KeyValuePair(key, list(map(value_selector, ObjUtil.exec_generator(value))))
 
         return partial_group
 

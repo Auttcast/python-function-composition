@@ -152,6 +152,25 @@ def test_group():
     
     assert actual == expected
 
+def test_group_value_selector():
+    data = [
+        {"id": 1, "tag": "TAG1"},
+        {"id": 2, "tag": "TAG2"},
+        {"id": 3, "tag": "TAG1"},
+        {"id": 4, "tag": "TAG2"}
+    ]
+
+    expected = [
+        KeyValuePair(key="TAG1", value=[1, 3]),
+        KeyValuePair(key="TAG2", value=[2, 4])
+    ]
+
+    gen = f.group(lambda x: x['tag'], lambda x: x['id'])
+    
+    actual = list(gen(data))
+    
+    assert actual == expected
+
 def test_to_dict():
     data = [
         {"id": 1, "tag": "TAG1"},
