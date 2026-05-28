@@ -1,5 +1,7 @@
 3.4.0
 added mapi (map with index)
+removed distinct_set
+updated distinct - added selector arg
 
 3.3.1
 bug fix: chunk yielded an empty batch

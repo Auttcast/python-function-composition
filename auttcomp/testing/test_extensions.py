@@ -277,12 +277,15 @@ def test_join():
 
     assert actual == expected
 
-def test_distinct_set():
-    arr = f.id([1, 2, 3, 3, 3, 3])
-    slow_distinct = arr > f.distinct
-    fast_distinct = arr > f.distinct_set
-    assert slow_distinct == fast_distinct
+def test_distinct():
+    data = [1, 2, 3, 3, 3, 3]
+    actual = f.distinct()(data)
+    assert actual == {1, 2, 3}
 
+def test_distinct_selector():
+    data = [{'a': 1}, {'a': 2}, {'a': 2}, {'a': 3}, {'a': 3}, {'a': 3}]
+    actual = f.distinct(lambda x: x['a'])(data)
+    assert actual == {1, 2, 3}
 
 def test_zip():
     data1 = ["a", "b", "c"]

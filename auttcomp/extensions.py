@@ -107,20 +107,17 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def distinct(data: Iterable[T]) -> Iterable[T]:
-        '''a general purpose distinct implementation where performance is not required
-        if your data is compatible, you may be able to use distinctSet
-        '''
-
-
-
-        return list(functools.reduce(lambda a, b: a + [b] if b not in a else a, data, []))
-
-    @staticmethod
-    @Composable
-    def distinct_set(data: Iterable[T]) -> Iterable[T]:
+    def distinct(selector: Callable[[T], R] = None) -> Callable[[Iterable[T]], Iterable[R]]:
         '''implementation of distinct using python's set, but limited to qualifying primitive types'''
-        return list(set(data))
+
+        if selector is None:
+            def partial_set_default(data: Iterable[T]) -> Iterable[R]:
+                return set(data)
+            return partial_set_default
+        else:
+            def partial_set_selector(data: Iterable[T]) -> Iterable[R]:
+                return set(map(selector, data))
+            return partial_set_selector
 
     @staticmethod
     @Composable
