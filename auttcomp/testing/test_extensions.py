@@ -259,6 +259,92 @@ def test_to_dict_group_convention():
     
     assert actual == expected
 
+def test_group_take():
+
+    def create_element(tag, content):
+        return {'tag':tag, 'content':content}
+
+    data = [
+        create_element('p', 'content0'),#0
+        create_element('h1', 'header1'),
+        create_element('p', 'content1'),#2
+        create_element('h2', 'header2'),
+        create_element('p', 'content2'),#4
+        create_element('p', 'content22'),#5
+        create_element('h3', 'header3'),
+        create_element('p', 'content3'),#7
+        create_element('p', 'content33')#8
+    ]
+
+    expected = [
+        KeyValuePair(None, [data[0]]),
+        KeyValuePair('header1', [data[2]]),
+        KeyValuePair('header2', [data[4], data[5]]),
+        KeyValuePair('header3', [data[7], data[8]])
+    ]
+
+    actual = f.id(data) > f.group_take(
+        key_filter=lambda x: x['tag'] in {'h1', 'h2', 'h3'},
+        key_map=lambda x: x['content']) | list
+
+    assert actual == expected
+
+def test_group_take_empty_content():
+
+    def create_element(tag, content):
+        return {'tag':tag, 'content':content}
+
+    data = [
+        create_element('h1', 'header1'),
+        create_element('h2', 'header2'),
+        create_element('p', 'content2'),#2
+        create_element('p', 'content22'),#3
+        create_element('h3', 'header3'),
+    ]
+
+    expected = [
+        KeyValuePair('header1', []),
+        KeyValuePair('header2', [data[2], data[3]]),
+        KeyValuePair('header3', [])
+    ]
+
+    actual = f.id(data) > f.group_take(
+        key_filter=lambda x: x['tag'] in {'h1', 'h2', 'h3'},
+        key_map=lambda x: x['content']) | list
+
+    assert actual == expected
+
+def test_group_take_no_keys():
+
+    def create_element(tag, content):
+        return {'tag':tag, 'content':content}
+
+    data = [
+        create_element('p', 'content2'),
+        create_element('p', 'content22'),
+    ]
+
+    expected = [
+        KeyValuePair(None, [data[0], data[1]])
+    ]
+
+    actual = f.id(data) > f.group_take(
+        key_filter=lambda x: x['tag'] in {'h1', 'h2', 'h3'},
+        key_map=lambda x: x['content']) | list
+
+    assert actual == expected
+
+def test_group_take_no_data():
+
+    data = []
+    expected = []
+
+    actual = f.id(data) > f.group_take(
+        key_filter=lambda x: x['tag'] in {'h1', 'h2', 'h3'},
+        key_map=lambda x: x['content']) | list
+
+    assert actual == expected
+
 def test_join():
 
     dataFoo = [

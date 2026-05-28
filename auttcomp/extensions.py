@@ -238,6 +238,27 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
+    def group_take(key_filter: Callable[[T], bool], key_map: Callable[[T], K] = id_param) -> Callable[[Iterable[T]], Iterable[KeyValuePair[K, R]]]:
+        '''Group items of a collection where keys and values are siblings (for example, nodes that describe an HTML document)
+        key_filter: a filter to identify whether the node is a key
+        key_map: (optional) map the key node to a custom property
+        '''
+        @Composable
+        def partial_group_take(data: Iterable[T]) -> Iterable[KeyValuePair[K, R]]:
+            current_pair = KeyValuePair(key=None, value=[])
+            for d in data:
+                if key_filter(d):
+                    if current_pair.key != None or (current_pair.key == None and len(current_pair.value) > 0):
+                        yield current_pair
+                    current_pair = KeyValuePair(key=key_map(d), value=[])
+                else:
+                    current_pair.value.append(d)
+            if current_pair.key != None or (current_pair.key == None and len(current_pair.value) > 0):#last
+                yield current_pair
+        return partial_group_take
+
+    @staticmethod
+    @Composable
     def to_dict(key_selector: Callable[[T], K] = None, value_selector: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], dict[K, R]]:
         '''return a dict by applying the key_selector and value_selector to each item in the iterable.
         If duplicate keys are found, an exception is raised.
