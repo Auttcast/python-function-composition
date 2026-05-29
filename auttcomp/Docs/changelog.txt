@@ -1,7 +1,12 @@
+3.5.0
+added group_take extension
+updated join result selector
+corrected group and join function signatures as KeyValuePair
+
 3.4.0
 added mapi (map with index)
 removed distinct_set
-updated distinct - function like distinct_set now; added selector func
+updated distinct - functions like distinct_set now; added selector func
 updated group - added value selector
 
 3.3.1

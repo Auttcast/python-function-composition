@@ -223,14 +223,14 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def group(key_selector: Callable[[T], K] = id_param, value_selector: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], Iterable[dict[K, Iterable[R]]]]:
+    def group(key_selector: Callable[[T], K] = id_param, value_selector: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], Iterable[KeyValuePair[K, Iterable[R]]]]:
         '''curried version of itertools.groupby
         sort by key is used before grouping to achieve singular grouping
         this implementation runs the iterable for the grouping, but yields the key/value pair
         '''
 
         @Composable
-        def partial_group(data: Iterable[T]) -> Iterable[dict[K, Iterable[T]]]:
+        def partial_group(data: Iterable[T]) -> Iterable[KeyValuePair[K, Iterable[R]]]:
             for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=key_selector), key=key_selector):
                 yield KeyValuePair(key, list(map(value_selector, ObjUtil.exec_generator(value))))
 
@@ -302,7 +302,6 @@ class Api(Composable[P, R]):
         def partial_join(right_data: Iterable[T2]) -> Iterable[KeyValuePair[K, R]]:
             left_dict = Api.to_dict(left_key_selector)(left_data)
             right_dict = Api.to_dict(right_key_selector)(right_data)
-
             for key in set(left_dict.keys()).intersection(set(right_dict.keys())):
                 yield KeyValuePair(key=key, value=result_selector(left_dict[key], right_dict[key]))
 
