@@ -224,15 +224,28 @@ class Api(Composable[P, R]):
     @staticmethod
     @Composable
     def group(key_selector: Callable[[T], K] = id_param, value_selector: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], Iterable[KeyValuePair[K, Iterable[R]]]]:
-        '''curried version of itertools.groupby
-        sort by key is used before grouping to achieve singular grouping
-        this implementation runs the iterable for the grouping, but yields the key/value pair
         '''
+        group the data into a KeyValuePair
+        '''
+
+        def sort_key_none_compat(x):
+            value = key_selector(x)
+            return (value is not None, value)
 
         @Composable
         def partial_group(data: Iterable[T]) -> Iterable[KeyValuePair[K, Iterable[R]]]:
-            for key, value in itertools.groupby(sorted(ObjUtil.exec_generator(data), key=key_selector), key=key_selector):
-                yield KeyValuePair(key, list(map(value_selector, ObjUtil.exec_generator(value))))
+
+            last_kv = None
+            for item in sorted(ObjUtil.exec_generator(data), key=sort_key_none_compat):
+                if last_kv is None:
+                    last_kv = KeyValuePair(key_selector(item), [value_selector(item)])
+                elif last_kv.key != key_selector(item):
+                    yield last_kv
+                    last_kv = KeyValuePair(key_selector(item), [value_selector(item)])
+                else:
+                    last_kv.value.append(value_selector(item))
+            if last_kv is not None:
+                yield last_kv
 
         return partial_group
 

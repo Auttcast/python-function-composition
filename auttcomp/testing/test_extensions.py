@@ -152,6 +152,33 @@ def test_group():
     
     assert actual == expected
 
+def test_group_none_key():
+    data = [
+        {"id": 1, "tag": None},
+        {"id": 2, "tag": "TAG2"},
+        {"id": 3, "tag": "TAG1"},
+        {"id": 4, "tag": "TAG2"}
+    ]
+
+    expected = [
+        KeyValuePair(key=None, value=[
+            {"id": 1, "tag": None}
+        ]),
+        KeyValuePair(key="TAG1", value=[
+            {"id": 3, "tag": "TAG1"}
+        ]),
+        KeyValuePair(key="TAG2", value=[
+            {"id": 2, "tag": "TAG2"},
+            {"id": 4, "tag": "TAG2"}
+        ])
+    ]
+
+    gen = f.group(lambda x: x['tag'])
+    
+    actual = list(gen(data))
+    
+    assert actual == expected
+
 def test_group_value_selector():
     data = [
         {"id": 1, "tag": "TAG1"},
