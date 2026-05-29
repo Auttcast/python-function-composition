@@ -104,7 +104,7 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def list(data: Iterable[T]) -> list[T]:
+    def list(data: Iterable[T]) -> Iterable[T]:
         '''Built-in mutable sequence.\n\nIf no argument is given, the constructor creates a new empty list.\nThe argument must be an iterable if specified.'''
         return list(data)
 
