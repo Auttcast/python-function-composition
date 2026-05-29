@@ -394,7 +394,7 @@ def test_distinct_selector():
 def test_zip():
     data1 = ["a", "b", "c"]
     data2 = ["A", "B"]
-    expected = [("a", "A"),("b", "B"),("c", None)]
+    expected = [("a", "A"),("b", "B")]
 
     gen = f.zip(data2)(data1)
 

@@ -2,6 +2,7 @@
 added group_take extension
 updated join result selector
 corrected group and join function signatures as KeyValuePair
+updated zip, now uses python native zip
 
 3.4.0
 added mapi (map with index)

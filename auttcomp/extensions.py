@@ -310,11 +310,11 @@ class Api(Composable[P, R]):
     @staticmethod
     @Composable
     def zip(data:Iterable[T]) -> Callable[[Iterable[T2]], Iterable[Tuple[T2, T]]]:
-        '''curried version of itertools.zip_longest'''
+        '''curried version of python native zip'''
 
         @Composable
         def partial_zip(data2: Iterable[T2]) -> Iterable[Tuple[T2, T]]:
-            return itertools.zip_longest(data2, data)
+            return zip(data2, data)
         
         return partial_zip
     
