@@ -3,8 +3,6 @@ from .composable import Composable
 from typing import Callable, Any, ParamSpec, Tuple, Iterable, TypeVar
 from .common import id_param, KeyValuePair
 from shape_eval.service import shape as eval_shape
-import functools
-import itertools
 
 P = ParamSpec('P')
 R = TypeVar('R')
@@ -85,17 +83,22 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def reduce(func: Callable[[T, T], R], initial: T = None) -> Callable[[Iterable[T]], R]:
-        '''curried version of functools's reduce
-        reduce(function, iterable) -> value\n\nApply a function of two arguments cumulatively to the items of an iterable, from left to right.\n\nThis effectively reduces the iterable to a single value.    If initial is present,\nit is placed before the items of the iterable in the calculation, and serves as\na default when the iterable is empty.\n\nFor example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5])\ncalculates ((((1 + 2) + 3) + 4) + 5).
+    def reduce(func: Callable[[T2, T], R], initial: T2 = None) -> Callable[[Iterable[T]], R]:
         '''
-
+        executes the func(previous, next) over each element to create an aggregate\n
+        initial: (optional) provides an initial value
+        '''
+        
         @Composable
         def partial_reduce(data: Iterable[T]) -> R:
-            if initial is None:
-                return functools.reduce(func, data)
-            else:
-                return functools.reduce(func, data, initial)
+            try:
+                it = iter(data)
+                result = next(it) if initial is None else initial
+                for item in it:
+                    result = func(result, item)
+                return result
+            except StopIteration:
+                raise TypeError("reduce() of empty iterable with no initial value")
 
         return partial_reduce
 

@@ -30,6 +30,18 @@ def test_reduce():
     actual = f.reduce(lambda p, n: p + n)(data)
     assert actual == 6
 
+def test_reduce_no_data_throws_type_error():
+    try:
+        f.reduce(lambda p, n: p + n)([])
+        raise "should throw"
+    except TypeError:
+        pass
+
+def test_reduce_no_data_with_init_returns_init():
+    actual = f.reduce(lambda p, n: p + n, 10)([])
+    expected = 10
+    assert actual == expected
+
 def test_reduce_initial():
     data = [2, 2, 2]
     actual = f.reduce(lambda p, n: p + n, 2)(data)
