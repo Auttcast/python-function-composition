@@ -307,18 +307,18 @@ class Api(Composable[P, R]):
     @staticmethod
     @Composable
     def join(
-        left_data: Iterable[T],
+        right_data: Iterable[T],
         left_key_selector: Callable[[T], K],
         right_key_selector: Callable[[T2], K],
-        result_selector: Callable[[T, T2], R] = lambda l, r: (l, r),
+        result_selector: Callable[[T, T2], R] = lambda left, right: (left, right),
     ) -> Callable[[T2], Iterable[KeyValuePair[K, R]]]:
         '''inner join two collections by key'''
 
         @Composable
-        def partial_join(right_data: Iterable[T2]) -> Iterable[KeyValuePair[K, R]]:
-            left_dict = Api.to_dict(left_key_selector)(left_data)
+        def partial_join(left_data: Iterable[T2]) -> Iterable[KeyValuePair[K, R]]:
             right_dict = Api.to_dict(right_key_selector)(right_data)
-            for key in set(left_dict.keys()).intersection(set(right_dict.keys())):
+            left_dict = Api.to_dict(left_key_selector)(left_data)
+            for key in set(right_dict.keys()).intersection(set(left_dict.keys())):
                 yield KeyValuePair(key=key, value=result_selector(left_dict[key], right_dict[key]))
 
         return partial_join

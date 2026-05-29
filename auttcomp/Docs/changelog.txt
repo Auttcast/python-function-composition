@@ -1,6 +1,6 @@
 3.5.0
 added group_take extension
-updated join result selector
+updated join result selector and left/right sigs
 corrected group and join function signatures as KeyValuePair
 updated zip, now uses python native zip
 udpated group implementation - no longer based on itertools.groupby

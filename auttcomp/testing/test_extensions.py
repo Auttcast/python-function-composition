@@ -386,20 +386,20 @@ def test_group_take_no_data():
 
 def test_join():
 
-    dataFoo = [
+    data_left = [
         {"foo_id": 1, "foo": "foo1"},
         {"foo_id": 2, "foo": "foo2"},
-        {"foo_id": 50, "foo": "foo50"},
+        {"foo_id": 50, "foo": "foo50"},#not joined
         {"foo_id": 3, "foo": "foo3"},
         {"foo_id": 4, "foo": "foo4"}
     ]
 
-    dataBar = [
+    data_right = [
         {"bar_id": 1, "bar": "bar1"},
         {"bar_id": 2, "bar": "bar2"},
         {"bar_id": 3, "bar": "bar3"},
         {"bar_id": 4, "bar": "bar4"},
-        {"bar_id": 100, "bar": "bar100"}
+        {"bar_id": 100, "bar": "bar100"}#not joined
     ]
 
     expected = [
@@ -409,12 +409,12 @@ def test_join():
         KeyValuePair(key=4, value=("foo4", "bar4"))
     ]
     
-    gen = f.join(
-        left_data=dataFoo,
+    gen = f.id(data_left) > f.join(
+        right_data=data_right,
         left_key_selector=lambda x: x['foo_id'],
         right_key_selector=lambda x: x['bar_id'],
-        result_selector=lambda l, r: (l['foo'], r['bar'])
-    )(dataBar)
+        result_selector=lambda left, right: (left['foo'], right['bar'])
+    )
     
     actual = list(gen)
 
