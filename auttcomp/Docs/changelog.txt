@@ -4,6 +4,7 @@ updated join result selector
 corrected group and join function signatures as KeyValuePair
 updated zip, now uses python native zip
 udpated group implementation - no longer based on itertools.groupby
+corrected filter function signature
 
 3.4.0
 added mapi (map with index)

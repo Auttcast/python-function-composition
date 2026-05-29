@@ -70,7 +70,7 @@ class Api(Composable[P, R]):
 
     @staticmethod
     @Composable
-    def filter(func: Callable[[T], R] = id_param) -> Callable[[Iterable[T]], Iterable[T]]:
+    def filter(func: Callable[[T], bool] = id_param) -> Callable[[Iterable[T]], Iterable[T]]:
         '''curried version of python's filter
         filter(function or None, iterable) --> filter object\n\nReturn an iterator yielding those items of iterable for which function(item)\nis true. If function is None, return the items that are true.
         '''
