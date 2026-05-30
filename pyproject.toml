@@ -21,7 +21,7 @@ exclude = [
 
 [project]
 name = "auttcomp"
-version = "3.5.0"
+version = "3.5.1"
 authors = [
   { name="Brandon McCartney", email="auttcast@gmail.com" },
 ]
@@ -38,7 +38,7 @@ classifiers = [
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE.txt"]
 dependencies = [
-    "shape_eval>=1.0.0"
+    "shape_eval>=1.1.0"
 ]
 
 [project.urls]
